@@ -21,6 +21,10 @@ const hbs = handlebars.create({
   extname: 'hbs',
   layoutsDir: __dirname + '/views/layouts',
   partialsDir: __dirname + '/views/partials',
+  // add json helper to parse json data in chart partial
+  helpers: {
+    json: (context) => JSON.stringify(context)
+  }
 });
 
 // database configuration
@@ -83,6 +87,3 @@ app.get('/', (req, res) => {
 // starting the server and keeping the connection open to listen for more requests
 app.listen(3000);
 console.log('Server is listening on port 3000');
-
-// must include this line to use local resources
-app.use(express.static(__dirname + '/'));
