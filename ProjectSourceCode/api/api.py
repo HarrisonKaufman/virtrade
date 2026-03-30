@@ -19,7 +19,7 @@ def get_finnhub_quote(symbol):
 
 #this is historical OHLCV data for a symbol
 def get_alpha_vantage_daily(symbol):
-    url = 'https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&symbol={symbol}&interval=5min&apikey={ALPHA_VANTAGE_API_KEY}'
+    url = f'https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&symbol={symbol}&apikey={ALPHA_VANTAGE_API_KEY}'
     r = requests.get(url)
     data = r.json()
     return data
