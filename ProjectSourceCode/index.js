@@ -81,6 +81,12 @@ app.get('/', (req, res) => {
     res.render('pages/home');
 });
 
+app.post("/trade", (req, res) => {
+  const { symbol, quantity, action } = req.body;
+  // add user object/db logic here
+  res.redirect(`/asset/${symbol}`);
+});
+
 // *****************************************************
 // <!-- Section 5 : Start Server-->
 // *****************************************************
