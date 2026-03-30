@@ -28,8 +28,8 @@ services:
     ports:
       - '8000:5000'
     volumes:
-      - .:/app/api
-    command: 'python api.py'
+      - .:/app
+    command: 'python api/api.py'
 
 volumes:
   virtrade:
