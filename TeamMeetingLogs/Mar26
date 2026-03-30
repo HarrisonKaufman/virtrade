@@ -1,0 +1,11 @@
+Team Group Meeting:
+We primarily discussed how we actually want to implement our website features.
+- We researched different stock trading API, and decided on a specific graph library so that we can actually visualize the stocks 
+- We discussed what is needed and not in the database, and came to the conclusion that we also need an object that holds important user information,
+so that our Tables would not need to constantly update information and slow down processing times.
+- We also discussed several options with how to implement code that interacts with our database and we will likely use Python due to its database 
+utilities. 
+- We also decided that the news page and the home page should likely combined into one just to make the UI simpler.
+
+Folow-Up:
+Must choose by end of the day which Stock API we want to use.
