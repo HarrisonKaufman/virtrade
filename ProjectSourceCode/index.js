@@ -81,6 +81,11 @@ app.get('/', (req, res) => {
     res.render('pages/home');
 });
 
+app.get('/asset/:symbol', (req, res) => {
+  const symbol = req.params.symbol;
+  res.render('asset', { symbol });
+});
+
 app.post("/trade", (req, res) => {
   const { symbol, quantity, action } = req.body;
   // add user object/db logic here
