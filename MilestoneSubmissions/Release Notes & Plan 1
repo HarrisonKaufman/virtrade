@@ -8,7 +8,7 @@ Website Layout:
 
 API: 
   - Connected to Stock Market API through Alpha Vantage and Finnhub API
-  - JSON parser to put Stock Market Information in JSON format
+  - JSON parser to retrieve usable data from API response JSON
   - Base Layer for Database
 
 Graph Visualizer:
