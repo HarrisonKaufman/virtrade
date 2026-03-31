@@ -13,3 +13,8 @@ INSERT INTO trades
 VALUES
     ();
 
+INSERT INTO follower_to_followed
+    (follower_id, followed_id)
+VALUES
+    ();
+

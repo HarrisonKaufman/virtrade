@@ -32,5 +32,11 @@ CREATE TABLE IF NOT EXISTS users_to_trades (
     trade_id    INTEGER     NOT NULL,
     CONSTRAINT fk_username FOREIGN KEY (username) REFERENCES  users(username),
     CONSTRAINT fk_trade_id FOREIGN KEY (trade_id) REFERENCES trades(trade_id)
+);
 
+CREATE TABLE IF NOT EXISTS follower_to_followed (
+    follower_id     INTEGER     NOT NULL,
+    followed_id     INTEGER     NOT NULL,
+    CONSTRAINT fk_follower FOREIGN KEY (follower) REFERENCES  users(username),
+    CONSTRAINT fk_followed FOREIGN KEY (followed) REFERENCES  users(username
 );
