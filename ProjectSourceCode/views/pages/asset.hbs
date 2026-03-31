@@ -1,0 +1,12 @@
+<h1>{{symbol}}</h1>
+
+{{> full-chart index="0" symbol=symbol}}
+
+<div class="trade-actions">
+  <form method="POST" action="/trade">
+    <input type="hidden" name="symbol" value="{{symbol}}">
+    <input type="number" name="quantity" placeholder="Quantity">
+    <button type="submit" name="action" value="buy">Buy</button>
+    <button type="submit" name="action" value="sell">Sell</button>
+  </form>
+</div>
