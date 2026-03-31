@@ -1,0 +1,21 @@
+Release Notes - March 31
+
+Website Layout:
+  - Added starter files including the various Handlebars and partials. 
+  - Log-In Page and Register page (POST methods need to be added later).
+  - Navbar with starter buttons.
+  - GET methods that render each respective page. 
+
+API: 
+  - Connected to Stock Market API through Alpha Vantage and Finnhub API
+  - JSON parser to retrieve usable data from API response JSON
+  - Base Layer for Database
+
+Graph Visualizer:
+  - Trading View tools to actually visualize Stocks (needs to be connected to API for actual data visualization)
+(Some things still need to fix some bugs and not yet merged to main)
+
+Plan for Next Week - March 31
+  - Connect User Registration to Database
+  - User Statistics (Portfolio, Friends)
+  - User Balance
