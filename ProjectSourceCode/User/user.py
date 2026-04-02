@@ -1,6 +1,7 @@
 ##creating User object to connect to the database and perform operations needed to track user info and balance
-
-
+from fastapi import FastAPI, Form
+app = FastAPI()
+#app = FastAPI() — creates the actual web application instance
 
 # In-memory "database" for demonstration (replace with real DB later)
 users = {}
@@ -24,7 +25,7 @@ class User:
             return "Insufficient Balance"
 
 #sign up route post method 
-app.post("/sign up")
+@app.post("/signup")
 def signup(username: str = Form(...), email: str = Form(...), password: str = Form(...)):
     if username and email in users:
         return "Username or Email already exists"
@@ -34,7 +35,7 @@ def signup(username: str = Form(...), email: str = Form(...), password: str = Fo
         return "User created successfully"
 
 #deposit route
-app.post("/deposit")
+@app.post("/deposit")
 def deposit(username: str = Form(...), amount: float = Form(...)):
     user = users.get(username)
     if not user:
@@ -43,7 +44,7 @@ def deposit(username: str = Form(...), amount: float = Form(...)):
     return {"username": username, "new_balance": user.balance}
 
 #withdrawal route
-app.post("/withdrawal")
+@app.post("/withdrawal")
 def withdrawal(username: str = Form(...), amount: float = Form(...)):
     user = users.get(username)
     if not user:
