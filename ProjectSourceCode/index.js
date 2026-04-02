@@ -11,6 +11,7 @@ const pgp = require('pg-promise')(); // To connect to the Postgres DB from the n
 const bodyParser = require('body-parser');
 const session = require('express-session'); // To set the session object. To store or access session data, use the `req.session`, which is (generally) serialized as JSON by the store.
 const axios = require('axios'); // To make HTTP requests from our server. We'll learn more about it in Part C.
+const bcryptjs = require('bcryptjs');
 
 // *****************************************************
 // <!-- Section 2 : Connect to DB -->
@@ -37,16 +38,6 @@ const dbConfig = {
 };
 
 const db = pgp(dbConfig);
-
-// test your database
-db.connect()
-  .then(obj => {
-    console.log('Database connection successful'); // you can view this message in the docker compose logs
-    obj.done(); // success, release the connection;
-  })
-  .catch(error => {
-    console.log('ERROR:', error.message || error);
-  });
 
 // *****************************************************
 // <!-- Section 3 : App Settings -->
@@ -92,9 +83,63 @@ app.post("/trade", (req, res) => {
   res.redirect(`/asset/${symbol}`);
 });
 
+app.get('/welcome', (req, res) => {
+  res.json({status: 'success', message: 'Welcome!'});
+});
+
+// Register API
+app.post('/register', async (req, res) => {
+  try {
+    const { username, email, password } = req.body;
+    
+    // Validate input
+    if (!username || !email || !password) {
+      return res.status(400).json({ message: 'Invalid input' });
+    }
+    
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return res.status(400).json({ message: 'Invalid input' });
+    }
+    
+    // Hash password
+    const hashedPassword = await bcryptjs.hash(password, 10);
+    
+    // Insert user into database
+    await db.none(
+      'INSERT INTO users (username, email, password_hash) VALUES ($1, $2, $3)',
+      [username, email, hashedPassword]
+    );
+    
+    res.status(200).json({ message: 'Success' });
+  } catch (error) {
+    // Handle duplicate username or email
+    if (error.message && (error.message.includes('unique') || error.message.includes('duplicate'))) {
+      return res.status(400).json({ message: 'Invalid input' });
+    }
+    console.error('Register error:', error);
+    res.status(400).json({ message: 'Invalid input' });
+  }
+});
+
+module.exports = app.listen(3000);
+
 // *****************************************************
 // <!-- Section 5 : Start Server-->
 // *****************************************************
 // starting the server and keeping the connection open to listen for more requests
-app.listen(3000);
-console.log('Server is listening on port 3000');
+if (require.main === module && process.env.NODE_ENV !== 'test') {
+  // Test database connection only when server starts
+  db.connect()
+    .then(obj => {
+      console.log('Database connection successful');
+      obj.done();
+    })
+    .catch(error => {
+      console.log('WARNING:', error.message || error);
+    });
+  
+  app.listen(3000);
+  console.log('Server is listening on port 3000');
+}
