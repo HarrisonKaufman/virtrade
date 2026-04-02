@@ -1,4 +1,3 @@
--- Create users table
 CREATE TABLE IF NOT EXISTS users (
     id              SERIAL          PRIMARY KEY,
     username        VARCHAR(50)     NOT NULL UNIQUE,
@@ -9,7 +8,6 @@ CREATE TABLE IF NOT EXISTS users (
     created_at      TIMESTAMP       DEFAULT CURRENT_TIMESTAMP
 );
 
--- Create balance_transactions table
 CREATE TABLE IF NOT EXISTS balance_transactions (
     id              SERIAL          PRIMARY KEY,
     user_id         INTEGER         NOT NULL REFERENCES users(id) ON DELETE RESTRICT ON UPDATE CASCADE,
@@ -19,13 +17,11 @@ CREATE TABLE IF NOT EXISTS balance_transactions (
     created_at      TIMESTAMP       DEFAULT CURRENT_TIMESTAMP
 );
 
--- Create indexes
 CREATE INDEX IF NOT EXISTS idx_users_username ON users(username);
 CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
 CREATE INDEX IF NOT EXISTS idx_transactions_user_id ON balance_transactions(user_id);
 CREATE INDEX IF NOT EXISTS idx_transactions_created ON balance_transactions(created_at);
 
--- Insert sample data
 INSERT INTO users (username, email, password_hash, balance) VALUES
     ('alice',   'alice@example.com', '$2a$10$hash1', 1500.00),
     ('bob',     'bob@example.com',   '$2a$10$hash2',  250.75),
