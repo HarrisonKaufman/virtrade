@@ -98,3 +98,26 @@ app.post("/trade", (req, res) => {
 // starting the server and keeping the connection open to listen for more requests
 app.listen(3000);
 console.log('Server is listening on port 3000');
+
+
+//register route
+app.post('/register', async (req, res) => {
+  const { username, email, password } = req.body;
+  await db.none('INSERT INTO users(username, email, password_hash) VALUES($1, $2, $3)',
+    [username, email, password]); // hash password before storing
+  res.redirect('/login');
+});
+
+//login route
+app.post('/login', async (req, res) => {
+  const user = await db.oneOrNone('SELECT * FROM users WHERE username = $1', [req.body.username]);
+  if (user) {
+    req.session.user = user;
+    res.redirect('/feed');
+  } else {
+    res.redirect('/login');
+  }
+});
+
+
+
