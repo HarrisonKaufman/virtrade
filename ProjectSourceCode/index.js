@@ -99,6 +99,8 @@ app.get('/logout', (req, res) => {
 
 app.get('/profile', (req, res) => {
     res.render('pages/profile');
+});
+
 app.get('/asset/:symbol', (req, res) => {
   const symbol = req.params.symbol;
   res.render('asset', { symbol });
