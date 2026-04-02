@@ -23,7 +23,7 @@ class User:
         else:
             return "Insufficient Balance"
 
-#sign up route 
+#sign up route post method 
 app.post("/sign up")
 def signup(username: str = Form(...), email: str = Form(...), password: str = Form(...)):
     if username and email in users:
