@@ -1,0 +1,20 @@
+TA Meeting - March 31
+
+Talked about what we each did
+
+Ian: Started working on Database Schema, including user information to log in and access the site on multiple different sessions. SQL file to manage that
+in Postgres Database. Also made Register and Login pages, though not fully connected to the database yet. 
+
+Austin: Did some database management. Worked on user info, password, and balance, not completely done with that yet, and still need to connect to the 
+
+Harrison: Made Python API in two different Stock information for future trades; Json Parser so that they can get clear data from the servers rather than 
+unorganized code.
+
+Dylan: Working on Stock Data that we're going to get including two partials including full graphs, which still need to be connected to API. Lightweight
+Graphs. 
+
+Mihai: Worked on Navbar and making an Index.js that connect to each page including log-in, register, home, and profile. Am also working on friends feature
+more now that I know how the database schema works.
+
+Need to make sure that we have a working main branch that shows at least the rough surface of what our project is planning on doing, then adding more
+features as they come after (so that we'll have something to present no matter what).

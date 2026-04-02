@@ -21,6 +21,10 @@ const hbs = handlebars.create({
   extname: 'hbs',
   layoutsDir: __dirname + '/views/layouts',
   partialsDir: __dirname + '/views/partials',
+  // add json helper to parse json data in chart partial
+  helpers: {
+    json: (context) => JSON.stringify(context)
+  }
 });
 
 // database configuration
@@ -95,6 +99,15 @@ app.get('/logout', (req, res) => {
 
 app.get('/profile', (req, res) => {
     res.render('pages/profile');
+app.get('/asset/:symbol', (req, res) => {
+  const symbol = req.params.symbol;
+  res.render('asset', { symbol });
+});
+
+app.post("/trade", (req, res) => {
+  const { symbol, quantity, action } = req.body;
+  // add user object/db logic here
+  res.redirect(`/asset/${symbol}`);
 });
 
 // *****************************************************

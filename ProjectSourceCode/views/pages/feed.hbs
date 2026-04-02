@@ -1,0 +1,11 @@
+<h1>Feed</h1>
+
+<div id="feed">
+  {{#each tickers}}
+    <div class="chart-card" onclick="window.location='/asset/{{this.symbol}}'">
+      <h2>{{this.short}}</h2>
+      <p>{{this.name}}</p>
+      {{> lightweight-chart index=@index ohlcData=this.ohlcData}}
+    </div>
+  {{/each}}
+</div>
