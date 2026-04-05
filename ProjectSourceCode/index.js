@@ -10,6 +10,7 @@ const path = require('path');
 const pgp = require('pg-promise')(); // To connect to the Postgres DB from the node server
 const bodyParser = require('body-parser');
 const session = require('express-session'); // To set the session object. To store or access session data, use the `req.session`, which is (generally) serialized as JSON by the store.
+const bcrypt = require('bcryptjs'); //  To hash passwords
 const axios = require('axios'); // To make HTTP requests from our server. We'll learn more about it in Part C.
 
 // *****************************************************
@@ -78,26 +79,77 @@ app.use(
 // *****************************************************
 
 app.get('/', (req, res) => {
-    res.render('pages/home');
-});
-
-app.get('/home', (req, res) => {
-    res.redirect('/');
-});
-
-app.get('/login', (req, res) => {
     res.render('pages/login');
 });
 
+const auth = (req, res, next) => {
+  if (!req.session.user) {
+    return res.redirect('/login');
+  }
+  next();
+};
+
+app.get('/home', auth, (req, res) => {
+    res.render('pages/home');
+});
+
+app.get('/login', (req, res) => {
+  res.render('pages/login');
+});
+
+app.post('/login', async (req, res) => {
+  let body = req.body;
+  const query = `
+  SELECT *
+  FROM users
+  WHERE username = $1`;
+  try {
+    let result = await db.oneOrNone(query, [body.username]);
+    if(!result) {
+      throw new Error();
+    }
+    const match = await bcrypt.compare(body.password, result.password_hash);
+    if (!match) {
+      throw new Error();
+    }
+    req.session.user = result.username;
+    req.session.save();
+    res.redirect('/home');
+  } catch (err) {
+    res.render('pages/login');
+  }
+});
+
 app.get('/register', (req, res) => {
-    res.render('pages/register');
+  res.render('pages/register');
+}); 
+
+app.post('/register', async (req, res) => {
+  let body = req.body;
+  const query = `
+  INSERT INTO users
+    (username, email, password_hash, balance)
+  VALUES
+    ($1, $2, $3, $4)`;
+  try {
+    if(!body.username || !body.password || !body.email) {
+      throw new Error();
+    }
+    const password_hash = await bcrypt.hash(body.password, 10);
+    await db.none(query, [body.username, body.email, password_hash, 1000]);
+    res.redirect('/login');
+  } catch (err) {
+    res.redirect('/register');
+  }
 });
 
-app.get('/logout', (req, res) => {
-    res.render('pages/logout');
+app.get('/logout', auth, (req, res) => {
+    req.session.destroy(() => {
+      res.redirect('/login');
+    });
 });
 
-app.get('/profile', (req, res) => {
+app.get('/profile', auth, (req, res) => {
     res.render('pages/profile');
 });
 
