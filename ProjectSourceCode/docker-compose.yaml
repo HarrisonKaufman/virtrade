@@ -4,6 +4,9 @@ services:
     env_file: .env
     expose:
       - '5432'
+    volumes:
+      - ./init_data:/docker-entrypoint-initdb.d/create.sql
+      - virtrade:/var/lib/postgresql
   web:
     image: node:lts
     user: 'node' 
@@ -17,6 +20,7 @@ services:
       - '3000:3000'
     volumes:
       - ./:/home/node/app
+
     command: 'npm start'
   api:
     build:
