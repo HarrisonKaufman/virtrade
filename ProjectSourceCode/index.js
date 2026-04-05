@@ -112,7 +112,7 @@ app.post('/login', async (req, res) => {
     if (!match) {
       throw new Error();
     }
-    req.session.user = result.username;
+    req.session.user = result.id;
     req.session.save();
     res.redirect('/home');
   } catch (err) {
@@ -149,8 +149,28 @@ app.get('/logout', auth, (req, res) => {
     });
 });
 
-app.get('/profile', auth, (req, res) => {
-    res.render('pages/profile');
+app.get('/profile', auth, async (req, res) => {
+  const query = `
+    SELECT *
+    FROM users
+    WHERE id = $1
+    `;
+  const result = await db.one(query, [req.session.user]);
+  res.render('pages/profile', {
+    username: result.username,
+    email: result.email,
+    balance: result.balance,
+    is_active: result.is_active
+  });
+});
+
+app.post('/delete', async (req, res) => {
+  const query = `
+    DELETE FROM USERS
+    WHERE id = $1
+  `
+  await db.none(query, [req.session.user]);
+  res.redirect('/logout');
 });
 
 app.get('/asset/:symbol', (req, res) => {
