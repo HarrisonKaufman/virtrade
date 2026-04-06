@@ -81,24 +81,36 @@ app.get('/', (req, res) => {
   res.render('pages/home');
 });
 
-app.get('/asset/:symbol', (req, res) => {
-  const symbol = req.params.symbol;
-  res.render('asset', { symbol });
+app.get('/home', (req, res) => {
+  res.redirect('/');
 });
 
-app.post("/trade", (req, res) => {
-  const { symbol, quantity, action } = req.body;
-  // add user object/db logic here
-  res.redirect(`/asset/${symbol}`);
-});
-
-// GET routes for login and register pages
 app.get('/login', (req, res) => {
   res.render('pages/login');
 });
 
 app.get('/register', (req, res) => {
   res.render('pages/register');
+});
+
+app.get('/logout', (req, res) => {
+  req.session.destroy();
+  res.redirect('/login');
+});
+
+app.get('/profile', (req, res) => {
+  res.render('pages/home'); // placeholder until profile page is built
+});
+
+app.get('/asset/:symbol', (req, res) => {
+  const symbol = req.params.symbol;
+  res.render('asset', { symbol });
+});
+
+app.post('/trade', (req, res) => {
+  const { symbol, quantity, action } = req.body;
+  // add user object/db logic here
+  res.redirect(`/asset/${symbol}`);
 });
 
 // *****************************************************
@@ -108,16 +120,15 @@ app.get('/register', (req, res) => {
 app.listen(3000);
 console.log('Server is listening on port 3000');
 
-
-//register route
+// register route
 app.post('/register', async (req, res) => {
   const { username, email, password } = req.body;
   await db.none('INSERT INTO users(username, email, password_hash) VALUES($1, $2, $3)',
-    [username, email, password]); // hash password before storing
+    [username, email, password]);
   res.redirect('/login');
 });
 
-//login route
+// login route
 app.post('/login', async (req, res) => {
   const user = await db.oneOrNone('SELECT * FROM users WHERE username = $1', [req.body.username]);
   if (user) {
@@ -127,6 +138,3 @@ app.post('/login', async (req, res) => {
     res.redirect('/login');
   }
 });
-
-
-
