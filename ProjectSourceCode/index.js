@@ -10,6 +10,7 @@ const path = require('path');
 const pgp = require('pg-promise')(); // To connect to the Postgres DB from the node server
 const bodyParser = require('body-parser');
 const session = require('express-session'); // To set the session object. To store or access session data, use the `req.session`, which is (generally) serialized as JSON by the store.
+const bcrypt = require('bcryptjs'); //  To hash passwords
 const axios = require('axios'); // To make HTTP requests from our server. We'll learn more about it in Part C.
 
 // *****************************************************
@@ -78,27 +79,100 @@ app.use(
 // *****************************************************
 
 app.get('/', (req, res) => {
-    res.render('pages/home');
-});
-
-app.get('/home', (req, res) => {
-    res.redirect('/');
-});
-
-app.get('/login', (req, res) => {
     res.render('pages/login');
 });
 
+const auth = (req, res, next) => {
+  if (!req.session.user) {
+    return res.redirect('/login');
+  }
+  next();
+};
+
+app.get('/home', auth, (req, res) => {
+    res.render('pages/home');
+});
+
+app.get('/login', (req, res) => {
+  res.render('pages/login');
+});
+
+app.post('/login', async (req, res) => {
+  let body = req.body;
+  const query = `
+  SELECT *
+  FROM users
+  WHERE username = $1`;
+  try {
+    let result = await db.oneOrNone(query, [body.username]);
+    if(!result) {
+      throw new Error();
+    }
+    const match = await bcrypt.compare(body.password, result.password_hash);
+    if (!match) {
+      throw new Error();
+    }
+    req.session.user = result.id;
+    req.session.save();
+    res.redirect('/home');
+  } catch (err) {
+    res.render('pages/login');
+  }
+});
+
 app.get('/register', (req, res) => {
-    res.render('pages/register');
+  res.render('pages/register');
+}); 
+
+app.post('/register', async (req, res) => {
+  let body = req.body;
+  const query = `
+  INSERT INTO users
+    (username, email, password_hash, balance)
+  VALUES
+    ($1, $2, $3, $4)`;
+  try {
+    if(!body.username || !body.password || !body.email) {
+      throw new Error();
+    }
+    const password_hash = await bcrypt.hash(body.password, 10);
+    await db.none(query, [body.username, body.email, password_hash, 1000]);
+    res.redirect('/login');
+  } catch (err) {
+    res.redirect('/register');
+  }
 });
 
-app.get('/logout', (req, res) => {
-    res.render('pages/logout');
+app.get('/logout', auth, (req, res) => {
+    req.session.destroy(() => {
+      res.redirect('/login');
+    });
 });
 
-app.get('/profile', (req, res) => {
-    res.render('pages/profile');
+app.get('/profile', auth, async (req, res) => {
+  const query = `
+    SELECT *
+    FROM users
+    WHERE id = $1
+    `;
+  const result = await db.one(query, [req.session.user]);
+  res.render('pages/profile', {
+    username: result.username,
+    email: result.email,
+    balance: result.balance,
+    is_active: result.is_active
+  });
+});
+
+app.post('/delete', async (req, res) => {
+  const query = `
+    DELETE FROM USERS
+    WHERE id = $1
+  `
+  await db.none(query, [req.session.user]);
+  res.redirect('/logout');
+});
+
 app.get('/asset/:symbol', (req, res) => {
   const symbol = req.params.symbol;
   res.render('asset', { symbol });
@@ -108,6 +182,41 @@ app.post("/trade", (req, res) => {
   const { symbol, quantity, action } = req.body;
   // add user object/db logic here
   res.redirect(`/asset/${symbol}`);
+});
+
+async function getOHLCForChart(symbol) {
+  const response = await fetch(`http://api:5000/daily/${symbol}`);
+  const data = await response.json();
+
+  const timeSeries = data.data['Time Series (Daily)'];
+
+  if (!timeSeries) {
+    console.error(`Rate limited or bad response for ${symbol}:`, data);
+    return [];  // return empty array instead of crashing
+  }
+
+  return Object.entries(timeSeries)
+    .map(([date, values]) => ({
+      time: date,
+      open: parseFloat(values['1. open']),
+      high: parseFloat(values['2. high']),
+      low:  parseFloat(values['3. low']),
+      close: parseFloat(values['4. close']),
+    }))
+    .sort((a, b) => a.time.localeCompare(b.time));
+}
+
+app.get("/feed", async (req, res) => {
+  const symbols = ["AAPL", "TSLA", "NVDA"];
+  const tickers = [];
+
+  for (const symbol of symbols) {
+    await new Promise(resolve => setTimeout(resolve, 1200)); // wait 1.2s between requests
+    const ohlcData = await getOHLCForChart(symbol);
+    tickers.push({ short: symbol, symbol, ohlcData });
+  }
+
+  res.render('pages/feed', { tickers });
 });
 
 // *****************************************************
