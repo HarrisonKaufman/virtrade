@@ -94,8 +94,13 @@ app.get('/register', (req, res) => {
 });
 
 app.get('/logout', (req, res) => {
-  req.session.destroy();
-  res.redirect('/login');
+  req.session.destroy(err => {
+    if (err) {
+      console.error('Session destruction error:', err);
+    }
+    res.clearCookie('connect.sid'); // remove session cookie from client
+    res.redirect('/login');
+  });
 });
 
 app.get('/profile', (req, res) => {
