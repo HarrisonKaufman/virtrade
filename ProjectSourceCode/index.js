@@ -175,7 +175,7 @@ app.post('/delete', async (req, res) => {
 
 app.get('/asset/:symbol', (req, res) => {
   const symbol = req.params.symbol;
-  res.render('asset', { symbol });
+  res.render('pages/asset', { symbol });
 });
 
 app.post("/trade", (req, res) => {
@@ -184,18 +184,27 @@ app.post("/trade", (req, res) => {
   res.redirect(`/asset/${symbol}`);
 });
 
+const cache = {};
+const CACHE_DURATION = 60 * 60 * 1000; // 1 hour in ms
+
 async function getOHLCForChart(symbol) {
+  const now = Date.now();
+
+  if (cache[symbol] && (now - cache[symbol].timestamp) < CACHE_DURATION) {
+    console.log(`Using cached data for ${symbol}`);
+    return cache[symbol].data;
+  }
+
   const response = await fetch(`http://api:5000/daily/${symbol}`);
   const data = await response.json();
-
   const timeSeries = data.data['Time Series (Daily)'];
 
   if (!timeSeries) {
-    console.error(`Rate limited or bad response for ${symbol}:`, data);
-    return [];  // return empty array instead of crashing
+    console.error(`Rate limited or bad response for ${symbol}`);
+    return cache[symbol]?.data || [];
   }
 
-  return Object.entries(timeSeries)
+  const ohlc = Object.entries(timeSeries)
     .map(([date, values]) => ({
       time: date,
       open: parseFloat(values['1. open']),
@@ -204,16 +213,23 @@ async function getOHLCForChart(symbol) {
       close: parseFloat(values['4. close']),
     }))
     .sort((a, b) => a.time.localeCompare(b.time));
+
+  cache[symbol] = { data: ohlc, timestamp: now };
+  return ohlc;
 }
 
 app.get("/feed", async (req, res) => {
-  const symbols = ["AAPL", "TSLA", "NVDA"];
-  const tickers = [];
+  const symbols = [
+    { short: "AAPL", symbol: "AAPL", name: "Apple Inc." },
+    { short: "TSLA", symbol: "TSLA", name: "Tesla Inc." },
+    { short: "NVDA", symbol: "NVDA", name: "NVIDIA Corp." },
+  ];
 
-  for (const symbol of symbols) {
-    await new Promise(resolve => setTimeout(resolve, 1200)); // wait 1.2s between requests
-    const ohlcData = await getOHLCForChart(symbol);
-    tickers.push({ short: symbol, symbol, ohlcData });
+  const tickers = [];
+  for (const t of symbols) {
+    await new Promise(resolve => setTimeout(resolve, 1200));
+    const ohlcData = await getOHLCForChart(t.symbol);
+    tickers.push({ ...t, ohlcData });
   }
 
   res.render('pages/feed', { tickers });

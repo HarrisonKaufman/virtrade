@@ -1,13 +1,5 @@
 <script src="https://cdn.jsdelivr.net/npm/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js"></script>
 
-<div>
-  <button onclick="event.stopPropagation(); setRange_{{index}}('1W')">1W</button>
-  <button onclick="event.stopPropagation(); setRange_{{index}}('1M')">1M</button>
-  <button onclick="event.stopPropagation(); setRange_{{index}}('3M')">3M</button>
-  <button onclick="event.stopPropagation(); setRange_{{index}}('1Y')">1Y</button>
-  <button onclick="event.stopPropagation(); setRange_{{index}}('ALL')">ALL</button>
-</div>
-
 <div id="lw_chart_{{index}}" style="height: 200px;"></div>
 <script>
   (function() {
