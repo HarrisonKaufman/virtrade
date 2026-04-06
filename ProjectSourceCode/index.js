@@ -122,10 +122,15 @@ console.log('Server is listening on port 3000');
 
 // register route
 app.post('/register', async (req, res) => {
-  const { username, email, password } = req.body;
-  await db.none('INSERT INTO users(username, email, password_hash) VALUES($1, $2, $3)',
-    [username, email, password]);
-  res.redirect('/login');
+  try {
+    const { username, email, password } = req.body;
+    await db.none('INSERT INTO users(username, email, password_hash) VALUES($1, $2, $3)',
+      [username, email, password]);
+    res.redirect('/login');
+  } catch (error) {
+    console.error('Register error:', error.message);
+    res.redirect('/register'); // redirect back if duplicate email/username
+  }
 });
 
 // login route
