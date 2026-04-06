@@ -78,7 +78,7 @@ app.use(
 // *****************************************************
 
 app.get('/', (req, res) => {
-    res.render('pages/home');
+  res.render('pages/home');
 });
 
 app.get('/asset/:symbol', (req, res) => {
@@ -90,6 +90,15 @@ app.post("/trade", (req, res) => {
   const { symbol, quantity, action } = req.body;
   // add user object/db logic here
   res.redirect(`/asset/${symbol}`);
+});
+
+// GET routes for login and register pages
+app.get('/login', (req, res) => {
+  res.render('pages/login');
+});
+
+app.get('/register', (req, res) => {
+  res.render('pages/register');
 });
 
 // *****************************************************
