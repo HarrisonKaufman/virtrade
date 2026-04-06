@@ -155,22 +155,30 @@ app.get('/profile', auth, async (req, res) => {
     FROM users
     WHERE id = $1
     `;
-  const result = await db.one(query, [req.session.user]);
-  res.render('pages/profile', {
-    username: result.username,
-    email: result.email,
-    balance: result.balance,
-    is_active: result.is_active
-  });
+  try {
+    const result = await db.one(query, [req.session.user]);
+    res.render('pages/profile', {
+      username: result.username,
+      email: result.email,
+      balance: result.balance,
+      is_active: result.is_active
+    });
+  } catch(err) {
+    console.log('Failed to render acccount page');
+  }
 });
 
-app.post('/delete', async (req, res) => {
+app.post('/delete', auth, async (req, res) => {
   const query = `
     DELETE FROM USERS
     WHERE id = $1
-  `
-  await db.none(query, [req.session.user]);
-  res.redirect('/logout');
+  `;
+  try {
+    await db.none(query, [req.session.user]);
+    res.redirect('/logout');
+  } catch(err) {
+    console.log('Failed to delete account');
+  }
 });
 
 app.get('/asset/:symbol', (req, res) => {
