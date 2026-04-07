@@ -190,7 +190,7 @@ app.get('/asset/:symbol', (req, res) => {
   res.render('asset', { symbol });
 });
 
-app.post("/trade", (req, res) => {
+app.post('/trade', (req, res) => {
   const { symbol, quantity, action } = req.body;
   // add user object/db logic here
   res.redirect(`/asset/${symbol}`);
