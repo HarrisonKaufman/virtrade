@@ -12,6 +12,7 @@ CREATE TABLE IF NOT EXISTS users (
  
 CREATE TABLE IF NOT EXISTS balance_transactions (
     id               SERIAL          PRIMARY KEY,
+    transaction_name VARCHAR(50)     NOT NULL,
     user_id          INTEGER         NOT NULL,
     amount           DECIMAL(15, 2)  NOT NULL,  
     balance_after    DECIMAL(15, 2)  NOT NULL,   
