@@ -97,6 +97,10 @@ app.get('/login', (req, res) => {
   res.render('pages/login');
 });
 
+app.get('/feed', (req, res) => {
+  res.render('pages/feed');
+});
+
 app.post('/login', async (req, res) => {
   let body = req.body;
   const query = `
@@ -164,7 +168,7 @@ app.get('/profile', auth, async (req, res) => {
       is_active: result.is_active
     });
   } catch(err) {
-    console.log('Failed to render acccount page');
+    res.redirect('/home');
   }
 });
 
@@ -177,7 +181,7 @@ app.post('/delete', auth, async (req, res) => {
     await db.none(query, [req.session.user]);
     res.redirect('/logout');
   } catch(err) {
-    console.log('Failed to delete account');
+    res.redirect('/home');
   }
 });
 

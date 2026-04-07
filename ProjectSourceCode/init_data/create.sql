@@ -22,11 +22,9 @@ CREATE TABLE IF NOT EXISTS balance_transactions (
         ON UPDATE CASCADE
 );
  
-
- 
+CREATE INDEX idx_transactions_user_id   ON balance_transactions (user_id);
 -- CREATE INDEX idx_sessions_user_id       ON sessions             (user_id);
 -- CREATE INDEX idx_sessions_expires_at    ON sessions             (expires_at);
--- CREATE INDEX idx_transactions_user_id   ON balance_transactions (user_id);
 -- CREATE INDEX idx_transactions_created   ON balance_transactions (created_at);
  
  
@@ -37,3 +35,10 @@ VALUES
     ('bob',     'bob@example.com',   '<hashed_password>',  250.75),
     ('charlie', 'charlie@example.com','<hashed_password>', 0.00);
  
+INSERT INTO balance_transactions
+    (transaction_name, user_id, amount, balance_after)
+VALUES
+    ('AMZN',1,50,500),
+    ('TSLA',1,150,200),
+    ('QRTY',2,75,750),
+    ('ZZZZ',3,10,100);
