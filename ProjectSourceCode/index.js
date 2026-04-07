@@ -78,33 +78,41 @@ app.use(
 // *****************************************************
 
 app.get('/', (req, res) => {
-    res.render('pages/home');
+  res.render('pages/home');
 });
 
 app.get('/home', (req, res) => {
-    res.redirect('/');
+  res.redirect('/');
 });
 
 app.get('/login', (req, res) => {
-    res.render('pages/login');
+  res.render('pages/login');
 });
 
 app.get('/register', (req, res) => {
-    res.render('pages/register');
+  res.render('pages/register');
 });
 
 app.get('/logout', (req, res) => {
-    res.render('pages/logout');
+  req.session.destroy(err => {
+    if (err) {
+      console.error('Session destruction error:', err);
+    }
+    res.clearCookie('connect.sid'); // remove session cookie from client
+    res.redirect('/login');
+  });
 });
 
 app.get('/profile', (req, res) => {
-    res.render('pages/profile');
+  res.render('pages/home'); // placeholder until profile page is built
+});
+
 app.get('/asset/:symbol', (req, res) => {
   const symbol = req.params.symbol;
   res.render('asset', { symbol });
 });
 
-app.post("/trade", (req, res) => {
+app.post('/trade', (req, res) => {
   const { symbol, quantity, action } = req.body;
   // add user object/db logic here
   res.redirect(`/asset/${symbol}`);
@@ -116,3 +124,27 @@ app.post("/trade", (req, res) => {
 // starting the server and keeping the connection open to listen for more requests
 app.listen(3000);
 console.log('Server is listening on port 3000');
+
+// register route
+app.post('/register', async (req, res) => {
+  try {
+    const { username, email, password } = req.body;
+    await db.none('INSERT INTO users(username, email, password_hash) VALUES($1, $2, $3)',
+      [username, email, password]);
+    res.redirect('/login');
+  } catch (error) {
+    console.error('Register error:', error.message);
+    res.redirect('/register'); // redirect back if duplicate email/username
+  }
+});
+
+// login route
+app.post('/login', async (req, res) => {
+  const user = await db.oneOrNone('SELECT * FROM users WHERE username = $1', [req.body.username]);
+  if (user) {
+    req.session.user = user;
+    res.redirect('/feed');
+  } else {
+    res.redirect('/login');
+  }
+});
