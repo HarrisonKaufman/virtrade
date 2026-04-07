@@ -7,10 +7,27 @@
     const chart = LightweightCharts.createChart(container, {
       width: container.clientWidth,
       height: 200,
-      layout: { background: { color: "transparent" } }
+      layout: { background: { color: "transparent" } },
+      handleScroll: false,
+      handleScale: false,
     });
     const series = chart.addCandlestickSeries();
-    series.setData({{json ohlcData}});
+    series.setData({{{json ohlcData}}});
     chart.timeScale().fitContent();
+
+    window["setRange_{{index}}"] = function(range) {
+      const now = new Date();
+      let from;
+      if (range === '1W') from = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 7);
+      if (range === '1M') from = new Date(now.getFullYear(), now.getMonth() - 1, now.getDate());
+      if (range === '3M') from = new Date(now.getFullYear(), now.getMonth() - 3, now.getDate());
+      if (range === '1Y') from = new Date(now.getFullYear() - 1, now.getMonth(), now.getDate());
+      if (range === 'ALL') { chart.timeScale().fitContent(); return; }
+
+      chart.timeScale().setVisibleRange({
+        from: from.toISOString().split('T')[0],
+        to: now.toISOString().split('T')[0],
+      });
+    };
   })();
 </script>
