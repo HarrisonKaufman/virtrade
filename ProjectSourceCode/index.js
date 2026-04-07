@@ -10,6 +10,7 @@ const path = require('path');
 const pgp = require('pg-promise')(); // To connect to the Postgres DB from the node server
 const bodyParser = require('body-parser');
 const session = require('express-session'); // To set the session object. To store or access session data, use the `req.session`, which is (generally) serialized as JSON by the store.
+const bcrypt = require('bcryptjs'); //  To hash passwords
 const axios = require('axios'); // To make HTTP requests from our server. We'll learn more about it in Part C.
 
 // *****************************************************
@@ -78,33 +79,110 @@ app.use(
 // *****************************************************
 
 app.get('/', (req, res) => {
-  res.render('pages/home');
+    res.render('pages/login');
 });
 
-app.get('/home', (req, res) => {
-  res.redirect('/');
+const auth = (req, res, next) => {
+  if (!req.session.user) {
+    return res.redirect('/login');
+  }
+  next();
+};
+
+app.get('/home', auth, (req, res) => {
+    res.render('pages/home');
 });
 
 app.get('/login', (req, res) => {
   res.render('pages/login');
 });
 
+app.get('/feed', (req, res) => {
+  res.render('pages/feed');
+});
+
+app.post('/login', async (req, res) => {
+  let body = req.body;
+  const query = `
+  SELECT *
+  FROM users
+  WHERE username = $1`;
+  try {
+    let result = await db.oneOrNone(query, [body.username]);
+    if(!result) {
+      throw new Error();
+    }
+    const match = await bcrypt.compare(body.password, result.password_hash);
+    if (!match) {
+      throw new Error();
+    }
+    req.session.user = result.id;
+    req.session.save();
+    res.redirect('/home');
+  } catch (err) {
+    res.render('pages/login');
+  }
+});
+
 app.get('/register', (req, res) => {
   res.render('pages/register');
-});
+}); 
 
-app.get('/logout', (req, res) => {
-  req.session.destroy(err => {
-    if (err) {
-      console.error('Session destruction error:', err);
+app.post('/register', async (req, res) => {
+  let body = req.body;
+  const query = `
+  INSERT INTO users
+    (username, email, password_hash, balance)
+  VALUES
+    ($1, $2, $3, $4)`;
+  try {
+    if(!body.username || !body.password || !body.email) {
+      throw new Error();
     }
-    res.clearCookie('connect.sid'); // remove session cookie from client
+    const password_hash = await bcrypt.hash(body.password, 10);
+    await db.none(query, [body.username, body.email, password_hash, 1000]);
     res.redirect('/login');
-  });
+  } catch (err) {
+    res.redirect('/register');
+  }
 });
 
-app.get('/profile', (req, res) => {
-  res.render('pages/home'); // placeholder until profile page is built
+app.get('/logout', auth, (req, res) => {
+    req.session.destroy(() => {
+      res.redirect('/login');
+    });
+});
+
+app.get('/profile', auth, async (req, res) => {
+  const query = `
+    SELECT *
+    FROM users
+    WHERE id = $1
+    `;
+  try {
+    const result = await db.one(query, [req.session.user]);
+    res.render('pages/profile', {
+      username: result.username,
+      email: result.email,
+      balance: result.balance,
+      is_active: result.is_active
+    });
+  } catch(err) {
+    res.redirect('/home');
+  }
+});
+
+app.post('/delete', auth, async (req, res) => {
+  const query = `
+    DELETE FROM USERS
+    WHERE id = $1
+  `;
+  try {
+    await db.none(query, [req.session.user]);
+    res.redirect('/logout');
+  } catch(err) {
+    res.redirect('/home');
+  }
 });
 
 app.get('/asset/:symbol', (req, res) => {
@@ -124,27 +202,3 @@ app.post('/trade', (req, res) => {
 // starting the server and keeping the connection open to listen for more requests
 app.listen(3000);
 console.log('Server is listening on port 3000');
-
-// register route
-app.post('/register', async (req, res) => {
-  try {
-    const { username, email, password } = req.body;
-    await db.none('INSERT INTO users(username, email, password_hash) VALUES($1, $2, $3)',
-      [username, email, password]);
-    res.redirect('/login');
-  } catch (error) {
-    console.error('Register error:', error.message);
-    res.redirect('/register'); // redirect back if duplicate email/username
-  }
-});
-
-// login route
-app.post('/login', async (req, res) => {
-  const user = await db.oneOrNone('SELECT * FROM users WHERE username = $1', [req.body.username]);
-  if (user) {
-    req.session.user = user;
-    res.redirect('/feed');
-  } else {
-    res.redirect('/login');
-  }
-});
