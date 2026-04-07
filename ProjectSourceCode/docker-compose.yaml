@@ -1,13 +1,51 @@
+#services:
+ # db:
+  #  image: postgres
+  #  env_file: .env
+   # expose:
+  #    - '5432'
+ # web:
+   # image: node:lts
+  #  user: 'node' 
+  #  working_dir: /home/node/app
+  #  env_file: .env
+  #  environment:
+  #    - NODE_ENV=development
+  #  depends_on:
+  #    - db
+  #  ports:
+  #    - '3000:3000'
+ #   volumes:
+ #     - ./:/home/node/app
+  #  command: 'npm start'
+ # api:
+  #  build:
+  #    context: .
+  #    dockerfile: Dockerfile
+   # env_file: .env
+  #  depends_on:
+  #    - db
+ #   ports:
+ #     - '8000:5000'
+#    volumes:
+#      - .:/app
+#    command: 'python -m flask --app api/server run --host=0.0.0.0'
+
+#volumes:
+#  virtrade:
+
 services:
   db:
     image: postgres
     env_file: .env
     expose:
       - '5432'
+    volumes:
+      - group-project:/var/lib/postgresql
+      - ./init_data:/docker-entrypoint-initdb.d
   web:
     image: node:lts
-    user: 'node' 
-    working_dir: /home/node/app
+    working_dir: /repository
     env_file: .env
     environment:
       - NODE_ENV=development
@@ -16,20 +54,8 @@ services:
     ports:
       - '3000:3000'
     volumes:
-      - ./:/home/node/app
-    command: 'npm start'
-  api:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    env_file: .env
-    depends_on:
-      - db
-    ports:
-      - '8000:5000'
-    volumes:
-      - .:/app
-    command: 'python -m flask --app api/server run --host=0.0.0.0'
-
+      - ./:/repository
+      - /repository/node_modules
+    command: 'npm run testandrun' #TODO: change the command to `npm run testandrun` to run mocha
 volumes:
-  virtrade:
+  group-project:
