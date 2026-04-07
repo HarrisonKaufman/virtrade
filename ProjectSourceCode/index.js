@@ -226,7 +226,7 @@ async function getOHLCForChart(symbol) {
   return ohlc;
 }
 
-app.get("/feed", async (req, res) => {
+app.get("/feed", auth, async (req, res) => {
   const symbols = [
     { short: "AAPL", symbol: "AAPL", name: "Apple Inc." },
     { short: "TSLA", symbol: "TSLA", name: "Tesla Inc." },
