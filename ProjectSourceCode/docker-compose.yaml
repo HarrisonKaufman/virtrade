@@ -56,6 +56,18 @@ services:
     volumes:
       - ./:/repository
       - /repository/node_modules
-    command: 'npm run testandrun' #TODO: change the command to `npm run testandrun` to run mocha
+    command: 'npm run testandrun' 
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    env_file: .env
+    depends_on:
+      - db
+    ports:
+      - '8000:5000'
+    volumes:
+      - .:/app
+    command: 'python -m flask --app api/server run --host=0.0.0.0'
 volumes:
   group-project:
