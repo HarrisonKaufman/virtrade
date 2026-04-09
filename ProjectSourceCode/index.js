@@ -173,6 +173,10 @@ app.post('/delete', auth, async (req, res) => {
   }
 });
 
+app.get('/leaderboard', async (req, res) => {
+  res.render('pages/leaderboard');
+});
+
 app.get('/asset/:symbol', (req, res) => {
   const symbol = req.params.symbol;
   res.render('pages/asset', { symbol });
