@@ -38,7 +38,7 @@ services:
       - '8000:5000'
     volumes:
       - .:/app
-    command: 'python -m flask --app api/server run --host=0.0.0.0'
+    command: 'python -m flask --app api/server run --host=0.0.0.0' 
 
 
 volumes:
