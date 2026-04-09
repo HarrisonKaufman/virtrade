@@ -1,6 +1,6 @@
 // ********************** Initialize server **********************************
 
-const app = require('../index.js'); //TODO: Make sure the path to your index.js is correctly added
+const server = require('../index'); //TODO: Make sure the path to your index.js is correctly added
 
 // ********************** Import Libraries ***********************************
 
@@ -16,7 +16,7 @@ describe('Server!', () => {
   // Sample test case given to test / endpoint.
   it('Returns the default welcome message', done => {
     chai
-      .request(app)
+      .request(server)
       .get('/welcome')
       .end((err, res) => {
         expect(res).to.have.status(200);
@@ -30,14 +30,18 @@ describe('Server!', () => {
 // *********************** TODO: WRITE 2 UNIT TESTCASES **************************
 
 describe('Testing Register API', () => {
+  // Use a unique username with timestamp to avoid duplicates
+  const timestamp = Date.now();
+  const uniqueUsername = `testuser${timestamp}`;
+
   // Positive Test Case
   it('positive : /register - should register a new user with valid credentials', done => {
     chai
-      .request(app)
-      .post('/register')
+      .request(server)
+      .post('/api/register')
       .send({
-        username: 'testuser123',
-        email: 'testuser@example.com',
+        username: uniqueUsername,
+        email: `test${timestamp}@example.com`,
         password: 'SecurePass123!'
       })
       .end((err, res) => {
@@ -51,10 +55,10 @@ describe('Testing Register API', () => {
   // Negative Test Case
   it('negative : /register - should reject registration with invalid email', done => {
     chai
-      .request(app)
-      .post('/register')
+      .request(server)
+      .post('/api/register')
       .send({
-        username: 'anotheruser',
+        username: `anotheruser${timestamp}`,
         email: 'invalid-email-format',
         password: 'SecurePass123!'
       })

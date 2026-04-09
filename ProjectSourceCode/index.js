@@ -10,6 +10,7 @@ const path = require('path');
 const pgp = require('pg-promise')(); // To connect to the Postgres DB from the node server
 const bodyParser = require('body-parser');
 const session = require('express-session'); // To set the session object. To store or access session data, use the `req.session`, which is (generally) serialized as JSON by the store.
+const bcrypt = require('bcryptjs'); //  To hash passwords
 const axios = require('axios'); // To make HTTP requests from our server. We'll learn more about it in Part C.
 const bcryptjs = require('bcryptjs');
 
@@ -65,30 +66,131 @@ app.use(
 );
 
 // *****************************************************
-// <!-- Section 4 : API Routes -->
+// <!-- Section 4 : API Routes & Middleware -->
 // *****************************************************
 
+// Auth middleware
+const auth = (req, res, next) => {
+  if (!req.session.user) {
+    return res.redirect('/login');
+  }
+  next();
+};
+
 app.get('/', (req, res) => {
+    res.render('pages/login');
+});
+
+app.get('/home', auth, (req, res) => {
     res.render('pages/home');
+});
+
+app.get('/login', (req, res) => {
+  res.render('pages/login');
+});
+
+app.post('/login', async (req, res) => {
+  let body = req.body;
+  const query = `
+  SELECT *
+  FROM users
+  WHERE username = $1`;
+  try {
+    let result = await db.oneOrNone(query, [body.username]);
+    if(!result) {
+      throw new Error();
+    }
+    const match = await bcrypt.compare(body.password, result.password_hash);
+    if (!match) {
+      throw new Error();
+    }
+    req.session.user = result.id;
+    req.session.save();
+    res.redirect('/home');
+  } catch (err) {
+    res.render('pages/login');
+  }
+});
+
+app.get('/register', (req, res) => {
+  res.render('pages/register');
+}); 
+
+app.post('/register', async (req, res) => {
+  let body = req.body;
+  const query = `
+  INSERT INTO users
+    (username, email, password_hash, balance)
+  VALUES
+    ($1, $2, $3, $4)`;
+  try {
+    if(!body.username || !body.password || !body.email) {
+      throw new Error();
+    }
+    const password_hash = await bcrypt.hash(body.password, 10);
+    await db.none(query, [body.username, body.email, password_hash, 1000]);
+    res.redirect('/login');
+  } catch (err) {
+    res.redirect('/register');
+  }
+});
+
+app.get('/logout', auth, (req, res) => {
+    req.session.destroy(() => {
+      res.redirect('/login');
+    });
+});
+
+app.get('/profile', auth, async (req, res) => {
+  const query = `
+    SELECT *
+    FROM users
+    WHERE id = $1
+    `;
+  try {
+    const result = await db.one(query, [req.session.user]);
+    res.render('pages/profile', {
+      username: result.username,
+      email: result.email,
+      balance: result.balance,
+      is_active: result.is_active
+    });
+  } catch(err) {
+    res.redirect('/home');
+  }
+});
+
+app.post('/delete', auth, async (req, res) => {
+  const query = `
+    DELETE FROM USERS
+    WHERE id = $1
+  `;
+  try {
+    await db.none(query, [req.session.user]);
+    res.redirect('/logout');
+  } catch(err) {
+    res.redirect('/home');
+  }
 });
 
 app.get('/asset/:symbol', (req, res) => {
   const symbol = req.params.symbol;
-  res.render('asset', { symbol });
+  res.render('pages/asset', { symbol });
 });
 
-app.post("/trade", (req, res) => {
+app.post('/trade', (req, res) => {
   const { symbol, quantity, action } = req.body;
   // add user object/db logic here
   res.redirect(`/asset/${symbol}`);
 });
 
+// API endpoints for testing
 app.get('/welcome', (req, res) => {
   res.json({status: 'success', message: 'Welcome!'});
 });
 
-// Register API
-app.post('/register', async (req, res) => {
+// API endpoint for tests - JSON register endpoint  
+app.post('/api/register', async (req, res) => {
   try {
     const { username, email, password } = req.body;
     
@@ -106,13 +208,27 @@ app.post('/register', async (req, res) => {
     // Hash password
     const hashedPassword = await bcryptjs.hash(password, 10);
     
-    // Insert user into database
-    await db.none(
-      'INSERT INTO users (username, email, password_hash) VALUES ($1, $2, $3)',
-      [username, email, hashedPassword]
-    );
+    // Insert user into database with retry logic
+    let retries = 3;
+    let lastError;
     
-    res.status(200).json({ message: 'Success' });
+    while (retries > 0) {
+      try {
+        await db.none(
+          'INSERT INTO users (username, email, password_hash, balance) VALUES ($1, $2, $3, $4)',
+          [username, email, hashedPassword, 1000]
+        );
+        return res.status(200).json({ message: 'Success' });
+      } catch (dbError) {
+        lastError = dbError;
+        retries--;
+        if (retries > 0) {
+          await new Promise(resolve => setTimeout(resolve, 500));
+        }
+      }
+    }
+    
+    throw lastError;
   } catch (error) {
     // Handle duplicate username or email
     if (error.message && (error.message.includes('unique') || error.message.includes('duplicate'))) {
@@ -123,23 +239,59 @@ app.post('/register', async (req, res) => {
   }
 });
 
-module.exports = app.listen(3000);
+const cache = {};
+const CACHE_DURATION = 60 * 60 * 1000; // 1 hour in ms
+
+async function getOHLCForChart(symbol) {
+  const now = Date.now();
+
+  if (cache[symbol] && (now - cache[symbol].timestamp) < CACHE_DURATION) {
+    console.log(`Using cached data for ${symbol}`);
+    return cache[symbol].data;
+  }
+
+  const response = await fetch(`http://api:5000/daily/${symbol}`);
+  const data = await response.json();
+  const timeSeries = data.data['Time Series (Daily)'];
+
+  if (!timeSeries) {
+    console.error(`Rate limited or bad response for ${symbol}`);
+    return cache[symbol]?.data || [];
+  }
+
+  const ohlc = Object.entries(timeSeries)
+    .map(([date, values]) => ({
+      time: date,
+      open: parseFloat(values['1. open']),
+      high: parseFloat(values['2. high']),
+      low:  parseFloat(values['3. low']),
+      close: parseFloat(values['4. close']),
+    }))
+    .sort((a, b) => a.time.localeCompare(b.time));
+
+  cache[symbol] = { data: ohlc, timestamp: now };
+  return ohlc;
+}
+
+app.get("/feed", auth, async (req, res) => {
+  const symbols = [
+    { short: "AAPL", symbol: "AAPL", name: "Apple Inc." },
+    { short: "TSLA", symbol: "TSLA", name: "Tesla Inc." },
+    { short: "NVDA", symbol: "NVDA", name: "NVIDIA Corp." },
+  ];
+
+  const tickers = [];
+  for (const t of symbols) {
+    await new Promise(resolve => setTimeout(resolve, 1200));
+    const ohlcData = await getOHLCForChart(t.symbol);
+    tickers.push({ ...t, ohlcData });
+  }
+
+  res.render('pages/feed', { tickers });
+});
 
 // *****************************************************
 // <!-- Section 5 : Start Server-->
 // *****************************************************
-// starting the server and keeping the connection open to listen for more requests
-if (require.main === module && process.env.NODE_ENV !== 'test') {
-  // Test database connection only when server starts
-  db.connect()
-    .then(obj => {
-      console.log('Database connection successful');
-      obj.done();
-    })
-    .catch(error => {
-      console.log('WARNING:', error.message || error);
-    });
-  
-  app.listen(3000);
-  console.log('Server is listening on port 3000');
-}
+
+module.exports = app.listen(3000);
