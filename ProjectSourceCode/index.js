@@ -12,6 +12,7 @@ const bodyParser = require('body-parser');
 const session = require('express-session'); // To set the session object. To store or access session data, use the `req.session`, which is (generally) serialized as JSON by the store.
 const bcrypt = require('bcryptjs'); //  To hash passwords
 const axios = require('axios'); // To make HTTP requests from our server. We'll learn more about it in Part C.
+const bcryptjs = require('bcryptjs');
 
 // *****************************************************
 // <!-- Section 2 : Connect to DB -->
@@ -39,16 +40,6 @@ const dbConfig = {
 
 const db = pgp(dbConfig);
 
-// test your database
-db.connect()
-  .then(obj => {
-    console.log('Database connection successful'); // you can view this message in the docker compose logs
-    obj.done(); // success, release the connection;
-  })
-  .catch(error => {
-    console.log('ERROR:', error.message || error);
-  });
-
 // *****************************************************
 // <!-- Section 3 : App Settings -->
 // *****************************************************
@@ -75,19 +66,20 @@ app.use(
 );
 
 // *****************************************************
-// <!-- Section 4 : API Routes -->
+// <!-- Section 4 : API Routes & Middleware -->
 // *****************************************************
 
-app.get('/', (req, res) => {
-    res.render('pages/login');
-});
-
+// Auth middleware
 const auth = (req, res, next) => {
   if (!req.session.user) {
     return res.redirect('/login');
   }
   next();
 };
+
+app.get('/', (req, res) => {
+    res.render('pages/login');
+});
 
 app.get('/home', auth, (req, res) => {
     res.render('pages/home');
@@ -192,6 +184,61 @@ app.post('/trade', (req, res) => {
   res.redirect(`/asset/${symbol}`);
 });
 
+// API endpoints for testing
+app.get('/welcome', (req, res) => {
+  res.json({status: 'success', message: 'Welcome!'});
+});
+
+// API endpoint for tests - JSON register endpoint  
+app.post('/api/register', async (req, res) => {
+  try {
+    const { username, email, password } = req.body;
+    
+    // Validate input
+    if (!username || !email || !password) {
+      return res.status(400).json({ message: 'Invalid input' });
+    }
+    
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return res.status(400).json({ message: 'Invalid input' });
+    }
+    
+    // Hash password
+    const hashedPassword = await bcryptjs.hash(password, 10);
+    
+    // Insert user into database with retry logic
+    let retries = 3;
+    let lastError;
+    
+    while (retries > 0) {
+      try {
+        await db.none(
+          'INSERT INTO users (username, email, password_hash, balance) VALUES ($1, $2, $3, $4)',
+          [username, email, hashedPassword, 1000]
+        );
+        return res.status(200).json({ message: 'Success' });
+      } catch (dbError) {
+        lastError = dbError;
+        retries--;
+        if (retries > 0) {
+          await new Promise(resolve => setTimeout(resolve, 500));
+        }
+      }
+    }
+    
+    throw lastError;
+  } catch (error) {
+    // Handle duplicate username or email
+    if (error.message && (error.message.includes('unique') || error.message.includes('duplicate'))) {
+      return res.status(400).json({ message: 'Invalid input' });
+    }
+    console.error('Register error:', error);
+    res.status(400).json({ message: 'Invalid input' });
+  }
+});
+
 const cache = {};
 const CACHE_DURATION = 60 * 60 * 1000; // 1 hour in ms
 
@@ -246,6 +293,5 @@ app.get("/feed", auth, async (req, res) => {
 // *****************************************************
 // <!-- Section 5 : Start Server-->
 // *****************************************************
-// starting the server and keeping the connection open to listen for more requests
-app.listen(3000);
-console.log('Server is listening on port 3000');
+
+module.exports = app.listen(3000);
