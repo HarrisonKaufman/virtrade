@@ -81,8 +81,27 @@ app.get('/', (req, res) => {
     res.render('pages/login');
 });
 
-app.get('/home', auth, (req, res) => {
-    res.render('pages/home');
+app.get('/home', auth, async (req, res) => {
+    try {
+        // Fetch news for popular stocks
+        const symbols = ['AAPL', 'GOOGL', 'MSFT'];
+        const newsData = {};
+        
+        for (const symbol of symbols) {
+            try {
+                const response = await axios.get(`http://api:5000/news/${symbol}`);
+                newsData[symbol] = response.data.articles || [];
+            } catch (err) {
+                console.error(`Error fetching news for ${symbol}:`, err.message);
+                newsData[symbol] = [];
+            }
+        }
+        
+        res.render('pages/home', { newsData });
+    } catch (err) {
+        console.error('Error in /home route:', err);
+        res.render('pages/home', { newsData: {} });
+    }
 });
 
 app.get('/login', (req, res) => {

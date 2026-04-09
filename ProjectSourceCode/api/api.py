@@ -26,12 +26,13 @@ def get_alpha_vantage_daily(symbol):
     data = r.json()
     return data
 
-#this gets relevant news stories for a given stock symbol
+#this gets 3 most recent news stories for a given stock symbol
 def get_news_for_symbol(symbol):
     url = f'{NEWS_API_BASE_URL}/everything'
     params = {
         'q': symbol,
         'sortBy': 'publishedAt',
+        'pageSize': 10,  # Get more to filter for English
         'apiKey': NEWS_API_KEY,
         'language': 'en'
     }
@@ -39,6 +40,14 @@ def get_news_for_symbol(symbol):
         r = requests.get(url, params=params)
         r.raise_for_status()
         data = r.json()
+        
+        # Filter for English articles and limit to 3
+        if data.get('articles'):
+            articles = [a for a in data.get('articles', []) if a.get('description') and a.get('title')]
+            data['articles'] = articles[:3]
+        
+        if not data.get('articles'):
+            return {'error': 'No articles found', 'status': data.get('status')}
         return data
     except requests.exceptions.RequestException as e:
         return {'error': str(e), 'status_code': r.status_code if 'r' in locals() else None}
