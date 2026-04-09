@@ -1,5 +1,5 @@
 from flask import Flask, jsonify, request
-from api import get_finnhub_quote, get_alpha_vantage_daily
+from api import get_finnhub_quote, get_alpha_vantage_daily, get_news_for_symbol
 
 app = Flask(__name__)
 
@@ -19,6 +19,18 @@ def daily(symbol):
     #get historical OHLCV from AV
     try:
         data = get_alpha_vantage_daily(symbol)
+        return jsonify({'symbol': symbol, 'data': data}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/news/<symbol>', methods=['GET'])
+def news(symbol):
+    #get relevant news stories for a stock symbol
+    try:
+        data = get_news_for_symbol(symbol)
+        if 'error' in data:
+            return jsonify(data), 400
         return jsonify({'symbol': symbol, 'data': data}), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
