@@ -1,4 +1,33 @@
-<h1>Feed</h1>
+<div class="min-vh-100 bg-dark py-4" data-bs-theme="dark">
+  <div class="container">
+
+    <div class="d-flex justify-content-between align-items-center mb-4 border-bottom border-secondary pb-3">
+      <h2 class="fw-bold text-white mb-0">Feed</h2>
+      <span class="text-muted small">{{tickers.length}} assets</span>
+    </div>
+
+    <div class="row g-4">
+      {{#each tickers}}
+        <div class="col-12 col-md-6 col-xl-4">
+          <div class="card bg-body-tertiary shadow-sm h-100 chart-card" onclick="window.location='/asset/{{this.symbol}}'">
+            <div class="card-body pb-1">
+              <div class="d-flex justify-content-between align-items-start mb-2">
+                <div>
+                  <h5 class="fw-bold text-white mb-0">{{this.short}}</h5>
+                  <small class="text-muted">{{this.name}}</small>
+                </div>
+                <span class="text-secondary">→</span>
+              </div>
+              <div class="mb-2">
+                <button class="btn btn-sm btn-outline-secondary py-0 px-2" onclick="event.stopPropagation(); setRange_{{@index}}('1W')">1W</button>
+                <button class="btn btn-sm btn-outline-secondary py-0 px-2" onclick="event.stopPropagation(); setRange_{{@index}}('1M')">1M</button>
+                <button class="btn btn-sm btn-outline-secondary py-0 px-2" onclick="event.stopPropagation(); setRange_{{@index}}('3M')">3M</button>
+                <button class="btn btn-sm btn-outline-secondary py-0 px-2" onclick="event.stopPropagation(); setRange_{{@index}}('1Y')">1Y</button>
+                <button class="btn btn-sm btn-outline-secondary py-0 px-2" onclick="event.stopPropagation(); setRange_{{@index}}('ALL')">ALL</button>
+              </div>
+              {{> lightweight-chart index=@index ohlcData=this.ohlcData}}
+            </div>
+          </div>
 
 <div id="feed">
   {{#each tickers}}
@@ -9,3 +38,33 @@
     </div>
   {{/each}}
 </div>
+
+<script>
+  window.addEventListener('pageshow', (event) => {
+    console.log('pageshow fired, persisted:', event.persisted);
+    if (event.persisted) {
+      window.location.reload();
+    }
+  });
+</script>
+        </div>
+      {{/each}}
+    </div>
+
+  </div>
+</div>
+
+<style>
+  .chart-card {
+    cursor: pointer;
+    transition: border-color 0.2s, transform 0.2s;
+    border: 1px solid transparent;
+  }
+  .chart-card:hover {
+    border-color: rgba(255,255,255,0.2);
+    transform: translateY(-2px);
+  }
+  .chart-card canvas {
+    pointer-events: none;
+  }
+</style>

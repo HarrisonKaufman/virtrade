@@ -1,12 +1,36 @@
-<h1>{{symbol}}</h1>
+<div class="min-vh-100 bg-dark py-4" data-bs-theme="dark">
+  <div class="container">
 
-{{> full-chart index="0" symbol=symbol}}
+    <div class="mb-4">
+      <a href="/feed" class="text-muted text-decoration-none small">← Back to Feed</a>
+    </div>
 
-<div class="trade-actions">
-  <form method="POST" action="/trade">
-    <input type="hidden" name="symbol" value="{{symbol}}">
-    <input type="number" name="quantity" placeholder="Quantity">
-    <button type="submit" name="action" value="buy">Buy</button>
-    <button type="submit" name="action" value="sell">Sell</button>
-  </form>
+    <div class="d-flex justify-content-between align-items-center mb-4 border-bottom border-secondary pb-3">
+      <h2 class="fw-bold text-white mb-0">{{symbol}}</h2>
+    </div>
+
+    <div class="card bg-body-tertiary shadow-sm mb-4">
+      <div class="card-body p-0">
+        {{> full-chart index="0" symbol=symbol}}
+      </div>
+    </div>
+
+    <div class="card bg-body-tertiary shadow-sm">
+      <div class="card-body">
+        <h5 class="fw-bold text-white mb-4">Place Order</h5>
+        <form method="POST" action="/trade">
+          <input type="hidden" name="symbol" value="{{symbol}}">
+          <div class="mb-3">
+            <label class="form-label text-muted">Quantity</label>
+            <input type="number" name="quantity" class="form-control" placeholder="Enter quantity" min="1">
+          </div>
+          <div class="d-flex gap-2">
+            <button type="submit" name="action" value="buy" class="btn btn-success fw-semibold flex-fill py-2">Buy</button>
+            <button type="submit" name="action" value="sell" class="btn btn-danger fw-semibold flex-fill py-2">Sell</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+  </div>
 </div>

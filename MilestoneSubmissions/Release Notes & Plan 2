@@ -1,0 +1,18 @@
+Relase Notes - April 7 
+
+Website Layout:
+  - Updated visuals of log-in and registration pages, and made sure that the entire website is now completely in Dark Mode.
+  - Authentication added to most methods, so you can't access profile before being logged in. 
+
+Database:
+  - Some errors regarding the Database initializing in SQL were fixed and should be working completely now. 
+  - Register Page now adds user account to users database when you log-in.
+  - JS for Users/Stocks created to store information (needs to be used later to reduce loading time of feed page). 
+
+API:
+  - There's a Feed page now that shows three different stocks and you can click on each one to get a more detailed view. 
+
+Plans:
+  - Need to finalize Buy/Sell and Withdrawal/Deposit features, currently in feed page.
+  - Need to find a News API and shows the various News pages on the home page.
+  - More user info, and ability to change password/username etc. 

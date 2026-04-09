@@ -1,0 +1,30 @@
+TA meeting - april 7th
+
+- demo of what we have so far we make account and they are stored in database
+- we have the feed which show stock info and we can click on each one and gives info
+- profile page delte account so far 
+
+-Mihai
+ - login, nav bar, profile page with being able to delete account, also deltes in back end.
+
+Ian
+ - worked more on registration and login page, database scema, merging into main branch.
+
+ Harrison
+ - Made a JS class that is in main called candlestick, gets the candles for the visualization of the stocks. thumbnail is the container to hold all the candle sticks, use them on feed page when we have the graphs.
+
+ Dylan
+ -asset and feed oage also connected Apis to graphs to feed page. Figuring out the implementation of candle sticks.
+  did reviews.
+
+Austin
+- worked on connecting when a user registers to to database using post and get methods. Also, fixed some database things from mysql to postgres. Since we are using postgres, we had to change some things.
+
+
+TODO
+- going to have a buy and sell feature need to get that done
+- home page is empty need to add to it obviously.
+- buy and sell features, withdraw, deposit, news api going for home page. Get a lot done by next week, after that its only one week till presentation. 
+
+Need to figure out who does who.
+- buy and sell, withdraw, deposit, news api, leaderboard page, friends page.
