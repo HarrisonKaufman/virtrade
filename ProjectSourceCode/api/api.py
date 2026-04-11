@@ -45,11 +45,24 @@ def get_finnhub_candle_data(symbol):
     return requests.get(url, params=params).json()
 
 
+# daily candles for 1M/3M view
 def get_twelve_data_daily(symbol, outputsize=90):
     url = f'https://api.twelvedata.com/time_series'
     params = {
         'symbol': symbol,
         'interval': '1day',
+        'outputsize': outputsize,
+        'apikey': TWELVE_DATA_API_KEY
+    }
+    r = requests.get(url, params=params)
+    return r.json()
+
+# hourly candles for 1D/1W view
+def get_twelve_data_intraday(symbol, interval='1h', outputsize=168):
+    url = f'https://api.twelvedata.com/time_series'
+    params = {
+        'symbol': symbol,
+        'interval': interval,
         'outputsize': outputsize,
         'apikey': TWELVE_DATA_API_KEY
     }

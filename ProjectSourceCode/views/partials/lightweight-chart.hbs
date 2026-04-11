@@ -1,33 +1,24 @@
-<script src="https://cdn.jsdelivr.net/npm/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js"></script>
-
 <div id="lw_chart_{{index}}" style="height: 200px;"></div>
 <script>
-  (function() {
+  window.addEventListener('load', function() {
     const container = document.getElementById("lw_chart_{{index}}");
     const chart = LightweightCharts.createChart(container, {
       width: container.clientWidth,
       height: 200,
-      layout: { background: { color: "transparent" } },
+      layout: {
+        background: { color: "transparent" },
+        textColor: "#aaaaaa",
+      },
+      grid: {
+        vertLines: { color: "rgba(255,255,255,0.05)" },
+        horzLines: { color: "rgba(255,255,255,0.05)" },
+      },
       handleScroll: false,
       handleScale: false,
     });
+
     const series = chart.addCandlestickSeries();
-    series.setData({{{json ohlcData}}});
+    series.setData({{{json intradayData}}});
     chart.timeScale().fitContent();
-
-    window["setRange_{{index}}"] = function(range) {
-      const now = new Date();
-      let from;
-      if (range === '1W') from = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 7);
-      if (range === '1M') from = new Date(now.getFullYear(), now.getMonth() - 1, now.getDate());
-      if (range === '3M') from = new Date(now.getFullYear(), now.getMonth() - 3, now.getDate());
-      if (range === '1Y') from = new Date(now.getFullYear() - 1, now.getMonth(), now.getDate());
-      if (range === 'ALL') { chart.timeScale().fitContent(); return; }
-
-      chart.timeScale().setVisibleRange({
-        from: from.toISOString().split('T')[0],
-        to: now.toISOString().split('T')[0],
-      });
-    };
-  })();
+  });
 </script>

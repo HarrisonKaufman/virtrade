@@ -240,7 +240,7 @@ app.post('/api/register', async (req, res) => {
 });
 
 const cache = {};
-const CACHE_DURATION = 60 * 60 * 1000; // 1 hour
+const CACHE_DURATION = 60 * 15 * 1000; // 15 minutes
 
 async function getOHLCForChart(symbol) {
   const now = Date.now();
@@ -273,6 +273,37 @@ async function getOHLCForChart(symbol) {
   return ohlc;
 }
 
+async function getIntradayForChart(symbol) {
+  const cacheKey = `${symbol}_intraday`;
+  const now = Date.now();
+
+  if (cache[cacheKey] && (now - cache[cacheKey].timestamp) < CACHE_DURATION) {
+    console.log(`Using cached intraday for ${symbol}`);
+    return cache[cacheKey].data;
+  }
+
+  const response = await fetch(`http://api:5000/intraday/${symbol}`);
+  const data = await response.json();
+  const values = data.data?.values;
+
+  if (!values) {
+    console.error(`Bad intraday response for ${symbol}`);
+    return cache[cacheKey]?.data || [];
+  }
+
+  const ohlc = values
+    .map(v => ({
+      time: Math.floor(new Date(v.datetime).getTime() / 1000), // convert to Unix timestamp
+      open: parseFloat(v.open),
+      high: parseFloat(v.high),
+      low:  parseFloat(v.low),
+      close: parseFloat(v.close),
+    }))
+    .sort((a, b) => a.time - b.time);
+
+  cache[cacheKey] = { data: ohlc, timestamp: now };
+  return ohlc;
+}
 
 app.get("/feed", auth, async (req, res) => {
   const symbols = [
@@ -287,8 +318,8 @@ app.get("/feed", auth, async (req, res) => {
   ];
 
   const tickers = await Promise.all(symbols.map(async (t) => {
-    const ohlcData = await getOHLCForChart(t.symbol);
-    return { ...t, ohlcData };
+    const intradayData = await getIntradayForChart(t.symbol);
+    return { ...t, intradayData };
   }));
 
   res.render('pages/feed', { tickers });

@@ -1,5 +1,5 @@
 from flask import Flask, jsonify, request
-from api import get_finnhub_quote, get_alpha_vantage_daily, get_finnhub_candle_data, get_twelve_data_daily
+from api import get_finnhub_quote, get_alpha_vantage_daily, get_finnhub_candle_data, get_twelve_data_daily, get_twelve_data_intraday
 
 app = Flask(__name__)
 
@@ -43,6 +43,14 @@ def candle(symbol):
 def twelvedata(symbol):
     try:
         data = get_twelve_data_daily(symbol)
+        return jsonify({'symbol': symbol, 'data': data}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    
+@app.route('/intraday/<symbol>', methods=['GET'])
+def intraday(symbol):
+    try:
+        data = get_twelve_data_intraday(symbol)
         return jsonify({'symbol': symbol, 'data': data}), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
