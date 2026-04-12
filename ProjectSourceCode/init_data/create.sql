@@ -25,11 +25,3 @@ CREATE TABLE IF NOT EXISTS balance_transactions (
 );
 
 CREATE INDEX IF NOT EXISTS idx_transactions_user_id ON balance_transactions (user_id);
-
-INSERT INTO users 
-    (username, email, password_hash, balance, is_active)
-VALUES
-    ('c', 'c', 'c', 800, TRUE),
-    ('d', 'd', 'd', 750, TRUE),
-    ('e', 'e', 'e', 1000, TRUE),
-    ('f', 'f', 'f', 2000, FALSE);
