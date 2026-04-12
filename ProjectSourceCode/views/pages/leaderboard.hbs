@@ -3,23 +3,27 @@
         <div class="d-flex justify-content-center  mb-4">
             <h5 class="card-title fw-bold mb-0">Leaderboard</h5>
         </div>
-
+        <form action="/changeSort" method="GET" class="text-end" id="sortType">
+            <button class="text-muted small btn">
+                {{#if (eq currentSort 'DESC')}} <span>^</span>
+                {{else}} <span>v</span>
+                {{/if}}
+            </button>
+        </form>
         {{#each topUsers}}
         <div class="user-row d-flex align-items-center justify-content-between py-3">
             <div class="d-flex align-items-center">
                 <div class="fs-5 me-3 text-secondary">
-                    {{#if (eq @index 0)}} <div class="text-warning">1</div>
-                    {{else if (eq @index 1)}} <div class="text-light">2</div>
-                    {{else if (eq @index 2)}} <div class="text-info">3</div>
+                    {{#if (eq @index 0)}} <span class="text-warning">1</span>
+                    {{else if (eq @index 1)}} <span class="text-light">2</span>
+                    {{else if (eq @index 2)}} <span class="text-info">3</span>
                     {{else}} {{add @index 1}}
                     {{/if}}
                 </div>
-                <div class="fs-5 fw-medium">{{this.username}}</div>
+                <span class="fs-5 fw-medium">{{this.username}}</span>
             </div>
             <div class="text-end">
-                <div class="balance-text fs-5 fw-bold">
-                    ${{this.balance}}
-                </div>
+                <div class="balance-text fs-5 fw-bold">${{this.balance}}</div>
             </div>
         </div>
         {{else}}

@@ -175,20 +175,27 @@ app.post('/delete', auth, async (req, res) => {
   }
 });
 
-app.get('/leaderboard', async (req, res) => {
+let currentSort = 'DESC';
+
+app.get('/leaderboard', auth, async (req, res) => {
   const query = `
     SELECT username, balance 
     FROM users
     WHERE is_active = TRUE
-    ORDER BY balance DESC 
+    ORDER BY balance ${currentSort}
     LIMIT 5
   `;
   try {
     const result = await db.any(query);
-    res.render('pages/leaderboard', { topUsers: result });
+    res.render('pages/leaderboard', { topUsers: result, currentSort: currentSort});
   } catch(err) {
     res.redirect('/profile');
   }
+});
+
+app.get('/changeSort', async (req, res) => {
+  currentSort = (currentSort == 'DESC') ? 'ASC' : 'DESC';
+  res.redirect('/leaderboard');
 });
 
 app.get('/asset/:symbol', (req, res) => {
