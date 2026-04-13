@@ -1,5 +1,6 @@
 ##creating User object to connect to the database and perform operations needed to track user info and balance
 from fastapi import FastAPI, Form
+import os, psycopg2, psycopg2.extras
 app = FastAPI()
 #app = FastAPI() — creates the actual web application instance
 
@@ -7,35 +8,83 @@ app = FastAPI()
 users = {}
 # gotta figure out how to instead of using this users array use the database
 
+# DB connection helper — connects to the Postgres container
+def get_db():
+    return psycopg2.connect(
+        host=os.environ.get("POSTGRES_HOST", "db"),
+        port=5432,
+        database=os.environ.get("POSTGRES_DB", "users"),
+        user=os.environ.get("POSTGRES_USER", "postgres"),
+        password=os.environ.get("POSTGRES_PASSWORD", "pwd")
+    )
+
 class Stock:
     def __init__(self, ticker, price):
         self.ticker = ticker
         self.price = price
 
 class User:
-    def __init__(self, username, password, email, balance=0.00, holdings=None):
+    def __init__(self, username, password, email, balance=0.00, holdings=None, user_id=None):
+        self.user_id = user_id
         self.username = username
         self.password = password
         self.email = email
         self.balance = balance
         self.holdings = holdings if holdings is not None else {}
 
+    @classmethod
+    def load_from_db(cls, user_id):
+        """Load a user from the database by ID (used by Flask API for trades)."""
+        conn = get_db()
+        try:
+            cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+            cur.execute("SELECT * FROM users WHERE id = %s", (user_id,))
+            row = cur.fetchone()
+            if not row:
+                return None
+            return cls(row["username"], row["password_hash"], row["email"], float(row["balance"]), user_id=row["id"])
+        finally:
+            conn.close()
+
     def buy(self, amount, stock):
-        if self.balance >= amount:
-            self.balance -= amount * stock.price
+        total_cost = amount * stock.price
+        if self.balance >= total_cost:
+            self.balance -= total_cost
             self.holdings[stock.ticker] = self.holdings.get(stock.ticker, 0) + amount
+            # Persist to DB if this user was loaded from DB
+            if self.user_id:
+                conn = get_db()
+                try:
+                    cur = conn.cursor()
+                    cur.execute("UPDATE users SET balance = %s WHERE id = %s", (self.balance, self.user_id))
+                    cur.execute("INSERT INTO balance_transactions (user_id, amount, balance_after) VALUES (%s, %s, %s)",
+                                (self.user_id, -total_cost, self.balance))
+                    conn.commit()
+                finally:
+                    conn.close()
             return self.balance
         else:
             return "Insufficient Balance"
-        
 
     def sell(self, amount, stock):
-        if self.holdings.get(stock.ticker, 0) >= amount:
-            self.holdings[stock.ticker] -= amount
-            self.balance += amount * stock.price
-            return self.balance
-        else:
+        # If loaded from DB, skip in-memory holdings check (holdings not yet persisted)
+        if not self.user_id and self.holdings.get(stock.ticker, 0) < amount:
             return "Insufficient Holdings"
+        self.holdings[stock.ticker] = max(0, self.holdings.get(stock.ticker, 0) - amount)
+        self.balance += amount * stock.price
+        # Persist to DB if this user was loaded from DB
+        if self.user_id:
+            total_gain = amount * stock.price
+            conn = get_db()
+            try:
+                cur = conn.cursor()
+                cur.execute("UPDATE users SET balance = %s WHERE id = %s", (self.balance, self.user_id))
+                cur.execute("INSERT INTO balance_transactions (user_id, amount, balance_after) VALUES (%s, %s, %s)",
+                            (self.user_id, total_gain, self.balance))
+                conn.commit()
+            finally:
+                conn.close()
+        return self.balance
 
 #sign up route post method 
 @app.post("/signup")

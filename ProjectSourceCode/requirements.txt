@@ -2,3 +2,6 @@ requests==2.33.1
 python-dotenv==1.2.2
 finnhub-python==2.4.27
 flask==3.0.0
+psycopg2-binary==2.9.10
+fastapi==0.115.12
+python-multipart==0.0.20
