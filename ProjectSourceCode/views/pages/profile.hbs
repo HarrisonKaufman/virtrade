@@ -27,8 +27,11 @@
                         {{/if}}
                     </div>
                 </div>
-                <div class="card-footer">
-                    <button class="btn btn-danger text-end" data-bs-toggle="modal" data-bs-target="#deleteModal">Delete Account</button>
+                <div class="card-footer d-flex">
+                    <form action="/leaderboard" method="GET">
+                        <button class="btn btn-primary">Leaderboard</button>
+                    </form>
+                    <button class="btn btn-danger ms-auto" data-bs-toggle="modal" data-bs-target="#deleteModal">Delete Account</button>
                 </div>
             </div>
         </div>

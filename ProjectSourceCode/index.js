@@ -25,7 +25,9 @@ const hbs = handlebars.create({
   partialsDir: __dirname + '/views/partials',
   // add json helper to parse json data in chart partial
   helpers: {
-    json: (context) => JSON.stringify(context)
+    json: (context) => JSON.stringify(context),
+    eq: (a, b) => a == b,
+    add: (a , b) => a + b
   }
 });
 
@@ -176,7 +178,7 @@ app.get('/profile', auth, async (req, res) => {
 
 app.post('/delete', auth, async (req, res) => {
   const query = `
-    DELETE FROM USERS
+    DELETE FROM users
     WHERE id = $1
   `;
   try {
@@ -185,6 +187,29 @@ app.post('/delete', auth, async (req, res) => {
   } catch (err) {
     res.redirect('/home');
   }
+});
+
+let currentSort = 'DESC';
+
+app.get('/leaderboard', auth, async (req, res) => {
+  const query = `
+    SELECT username, balance 
+    FROM users
+    WHERE is_active = TRUE
+    ORDER BY balance ${currentSort}
+    LIMIT 5
+  `;
+  try {
+    const result = await db.any(query);
+    res.render('pages/leaderboard', { topUsers: result, currentSort: currentSort});
+  } catch(err) {
+    res.redirect('/profile');
+  }
+});
+
+app.get('/changeSort', async (req, res) => {
+  currentSort = (currentSort == 'DESC') ? 'ASC' : 'DESC';
+  res.redirect('/leaderboard');
 });
 
 app.get('/asset/:symbol', (req, res) => {
