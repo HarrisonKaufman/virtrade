@@ -1,5 +1,5 @@
 from flask import Flask, jsonify, request
-from api import get_finnhub_quote, get_alpha_vantage_daily, get_news_for_symbol
+from api import get_finnhub_quote, get_alpha_vantage_daily,  get_news_for_symbol, get_finnhub_candle_data, get_twelve_data_daily, get_twelve_data_intraday
 import sys, os
 sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'User'))
 from user import User, Stock
@@ -202,6 +202,32 @@ def news(symbol):
 def health():
     #health check
     return jsonify({'status': 'healthy'}), 200
+
+
+@app.route('/candle/<symbol>', methods=['GET'])
+def candle(symbol):
+    try:
+        data = get_finnhub_candle_data(symbol)
+        return jsonify({'symbol': symbol, 'data': data}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/twelvedata/<symbol>', methods=['GET'])
+def twelvedata(symbol):
+    try:
+        data = get_twelve_data_daily(symbol)
+        return jsonify({'symbol': symbol, 'data': data}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    
+@app.route('/intraday/<symbol>', methods=['GET'])
+def intraday(symbol):
+    try:
+        data = get_twelve_data_intraday(symbol)
+        return jsonify({'symbol': symbol, 'data': data}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 
 if __name__ == '__main__':

@@ -1,4 +1,4 @@
-async function getFinnhubData(symbol, requested) {
+async function getFinnhubQuote(symbol, requested) {
     try {
         const response = await fetch(`http://localhost:8000/quote/${symbol}`);
         if (!response.ok) {

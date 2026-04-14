@@ -1,3 +1,5 @@
+<script src="https://cdn.jsdelivr.net/npm/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js"></script>
+
 <div class="min-vh-100 bg-dark py-4" data-bs-theme="dark">
   <div class="container">
 
@@ -18,35 +20,9 @@
                 </div>
                 <span class="text-secondary">→</span>
               </div>
-              <div class="mb-2">
-                <button class="btn btn-sm btn-outline-secondary py-0 px-2" onclick="event.stopPropagation(); setRange_{{@index}}('1W')">1W</button>
-                <button class="btn btn-sm btn-outline-secondary py-0 px-2" onclick="event.stopPropagation(); setRange_{{@index}}('1M')">1M</button>
-                <button class="btn btn-sm btn-outline-secondary py-0 px-2" onclick="event.stopPropagation(); setRange_{{@index}}('3M')">3M</button>
-                <button class="btn btn-sm btn-outline-secondary py-0 px-2" onclick="event.stopPropagation(); setRange_{{@index}}('1Y')">1Y</button>
-                <button class="btn btn-sm btn-outline-secondary py-0 px-2" onclick="event.stopPropagation(); setRange_{{@index}}('ALL')">ALL</button>
-              </div>
-              {{> lightweight-chart index=@index ohlcData=this.ohlcData}}
+              {{> lightweight-chart index=@index intradayData=this.intradayData}}
             </div>
           </div>
-
-<div id="feed">
-  {{#each tickers}}
-    <div class="chart-card" onclick="window.location='/asset/{{this.symbol}}'">
-      <h2>{{this.short}}</h2>
-      <p>{{this.name}}</p>
-      {{> lightweight-chart index=@index ohlcData=this.ohlcData}}
-    </div>
-  {{/each}}
-</div>
-
-<script>
-  window.addEventListener('pageshow', (event) => {
-    console.log('pageshow fired, persisted:', event.persisted);
-    if (event.persisted) {
-      window.location.reload();
-    }
-  });
-</script>
         </div>
       {{/each}}
     </div>
