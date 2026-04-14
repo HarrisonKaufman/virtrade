@@ -1,2 +1,58 @@
 {{> title}}
 
+<div class="container mt-5">
+  <h1>Stock Market News</h1>
+  <p class="lead">Latest news for popular stocks</p>
+
+  {{#each newsData}}
+    <div class="card mt-4">
+      <div class="card-header bg-dark text-white">
+        <h3 class="mb-0">{{@key}}</h3>
+      </div>
+      <div class="card-body">
+        {{#if this}}
+          {{#each this}}
+            <div class="news-item mb-3 pb-3 border-bottom">
+              <h5 class="card-title">
+                <a href="{{url}}" target="_blank" class="text-decoration-none">
+                  {{title}}
+                </a>
+              </h5>
+              <p class="card-text text-muted small">
+                {{source.name}} • {{publishedAt}}
+              </p>
+              <p class="card-text">{{description}}</p>
+              {{#if urlToImage}}
+                <img src="{{urlToImage}}" alt="Article Image" class="img-fluid rounded" style="max-width: 300px;">
+              {{/if}}
+            </div>
+          {{/each}}
+        {{else}}
+          <p class="text-muted">No news available for this stock.</p>
+        {{/if}}
+      </div>
+    </div>
+  {{/each}}
+
+  {{#unless newsData}}
+    <div class="alert alert-info mt-4" role="alert">
+      No news data available at this time.
+    </div>
+  {{/unless}}
+</div>
+
+<style>
+  .news-item:last-child {
+    border-bottom: none !important;
+  }
+  
+  .news-item a {
+    font-weight: 500;
+    color: #0066cc;
+  }
+  
+  .news-item a:hover {
+    text-decoration: underline !important;
+  }
+</style>
+
