@@ -33,7 +33,7 @@ class User:
         if self.holdings.get(stock.ticker, 0) >= amount:
             self.holdings[stock.ticker] -= amount
             self.balance += amount * stock.price
-            return self.balance
+            return 1
         else:
             return "Insufficient Holdings"
 
@@ -91,7 +91,7 @@ def sell(username: str = Form(...), ticker: str = Form(...), amount: float = For
     if not stock:
         return {"error": "Stock not found"}
     success = user.sell(amount, stock)
-    if success == "Insufficient Holdings":
+    if not success:
         return {"error": "Insufficient holdings"}
     return {"username": username, "ticker": ticker, "new_balance": user.balance, "holdings": user.holdings}
 #gotta figure out how to now connect back to data base instead of using this users library
