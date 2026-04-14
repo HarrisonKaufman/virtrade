@@ -14,4 +14,14 @@ CREATE TABLE IF NOT EXISTS balance_transactions (
     balance_after    DECIMAL(15, 2)  NOT NULL
 );
 
-CREATE INDEX IF NOT EXISTS idx_transactions_user_id   ON balance_transactions (user_id);
+CREATE INDEX IF NOT EXISTS idx_transactions_user_id ON balance_transactions (user_id);
+
+CREATE TABLE IF NOT EXISTS holdings (
+    id          SERIAL          PRIMARY KEY,
+    user_id     INT             NOT NULL REFERENCES users (id) ON DELETE CASCADE,
+    ticker      VARCHAR(20)     NOT NULL,
+    quantity    DECIMAL(15, 4)  NOT NULL DEFAULT 0,
+    UNIQUE (user_id, ticker)
+);
+
+CREATE INDEX IF NOT EXISTS idx_holdings_user_id ON holdings (user_id);
