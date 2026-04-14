@@ -5,7 +5,7 @@ services:
     expose:
       - '5432'
     volumes:
-      - group-project:/var/lib/postgresql/data
+      - group-project:/var/lib/postgresql
       - ./src/init_data:/docker-entrypoint-initdb.d
     healthcheck:
       test: ["CMD", "pg_isready", "-U", "postgres"]
