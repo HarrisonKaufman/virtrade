@@ -83,18 +83,12 @@ app.get('/', (req, res) => {
 
 app.get('/home', auth, async (req, res) => {
     try {
-        // Fetch news for popular stocks
         const symbols = ['AAPL', 'GOOGL', 'MSFT'];
         const newsData = {};
         
         for (const symbol of symbols) {
-            try {
-                const response = await axios.get(`http://api:5000/news/${symbol}`);
-                newsData[symbol] = response.data.articles || [];
-            } catch (err) {
-                console.error(`Error fetching news for ${symbol}:`, err.message);
-                newsData[symbol] = [];
-            }
+            const data = await getCachedNews(symbol);
+            newsData[symbol] = data.articles || [];
         }
         
         res.render('pages/home', { newsData });
@@ -290,6 +284,28 @@ async function getOHLCForChart(symbol) {
 
   cache[symbol] = { data: ohlc, timestamp: now };
   return ohlc;
+}
+
+const newsCache = {};
+const NEWS_CACHE_DURATION = 2 * 60 * 60 * 1000; // 2 hours in ms
+
+async function getCachedNews(symbol) {
+  const now = Date.now();
+
+  if (newsCache[symbol] && (now - newsCache[symbol].timestamp) < NEWS_CACHE_DURATION) {
+    console.log(`Using cached news for ${symbol}`);
+    return newsCache[symbol].data;
+  }
+
+  try {
+    const response = await axios.get(`http://api:5000/news/${symbol}`);
+    const data = response.data;
+    newsCache[symbol] = { data, timestamp: now };
+    return data;
+  } catch (err) {
+    console.error(`Error fetching news for ${symbol}:`, err.message);
+    return { articles: [] };
+  }
 }
 
 app.get("/feed", auth, async (req, res) => {
