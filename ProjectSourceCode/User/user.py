@@ -34,15 +34,20 @@ class User:
 
     @classmethod
     def load_from_db(cls, user_id):
-        """Load a user from the database by ID (used by Flask API for trades)."""
+        """Load a user from the database by ID, including their holdings."""
         conn = get_db()
         try:
             cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+            # Load user
             cur.execute("SELECT * FROM users WHERE id = %s", (user_id,))
             row = cur.fetchone()
             if not row:
                 return None
-            return cls(row["username"], row["password_hash"], row["email"], float(row["balance"]), user_id=row["id"])
+            # Load holdings from DB into dict {ticker: quantity}
+            cur.execute("SELECT ticker, quantity FROM holdings WHERE user_id = %s", (user_id,))
+            holdings_rows = cur.fetchall()
+            holdings = {r["ticker"]: float(r["quantity"]) for r in holdings_rows}
+            return cls(row["username"], row["password_hash"], row["email"], float(row["balance"]), holdings=holdings, user_id=row["id"])
         finally:
             conn.close()
 
@@ -56,9 +61,18 @@ class User:
                 conn = get_db()
                 try:
                     cur = conn.cursor()
+                    # Update balance
                     cur.execute("UPDATE users SET balance = %s WHERE id = %s", (self.balance, self.user_id))
+                    # Log transaction
                     cur.execute("INSERT INTO balance_transactions (user_id, amount, balance_after) VALUES (%s, %s, %s)",
                                 (self.user_id, -total_cost, self.balance))
+                    # Upsert holdings (insert or add to existing quantity)
+                    cur.execute("""
+                        INSERT INTO holdings (user_id, ticker, quantity)
+                        VALUES (%s, %s, %s)
+                        ON CONFLICT (user_id, ticker)
+                        DO UPDATE SET quantity = holdings.quantity + EXCLUDED.quantity
+                    """, (self.user_id, stock.ticker, amount))
                     conn.commit()
                 finally:
                     conn.close()
@@ -67,20 +81,32 @@ class User:
             return "Insufficient Balance"
 
     def sell(self, amount, stock):
-        # If loaded from DB, skip in-memory holdings check (holdings not yet persisted)
-        if not self.user_id and self.holdings.get(stock.ticker, 0) < amount:
+        # Check ownership — use DB holdings if loaded from DB, else in-memory dict
+        owned = self.holdings.get(stock.ticker, 0)
+        if owned < amount:
             return "Insufficient Holdings"
-        self.holdings[stock.ticker] = max(0, self.holdings.get(stock.ticker, 0) - amount)
-        self.balance += amount * stock.price
+        self.holdings[stock.ticker] = owned - amount
+        total_gain = amount * stock.price
+        self.balance += total_gain
         # Persist to DB if this user was loaded from DB
         if self.user_id:
-            total_gain = amount * stock.price
             conn = get_db()
             try:
                 cur = conn.cursor()
+                # Update balance
                 cur.execute("UPDATE users SET balance = %s WHERE id = %s", (self.balance, self.user_id))
+                # Log transaction
                 cur.execute("INSERT INTO balance_transactions (user_id, amount, balance_after) VALUES (%s, %s, %s)",
                             (self.user_id, total_gain, self.balance))
+                # Reduce holdings (remove row if quantity reaches 0)
+                cur.execute("""
+                    UPDATE holdings SET quantity = quantity - %s
+                    WHERE user_id = %s AND ticker = %s
+                """, (amount, self.user_id, stock.ticker))
+                cur.execute("""
+                    DELETE FROM holdings
+                    WHERE user_id = %s AND ticker = %s AND quantity <= 0
+                """, (self.user_id, stock.ticker))
                 conn.commit()
             finally:
                 conn.close()

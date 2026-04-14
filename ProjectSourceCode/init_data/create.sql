@@ -25,3 +25,18 @@ CREATE TABLE IF NOT EXISTS balance_transactions (
 );
 
 CREATE INDEX IF NOT EXISTS idx_transactions_user_id ON balance_transactions (user_id);
+
+CREATE TABLE IF NOT EXISTS holdings (
+    id          SERIAL          NOT NULL,
+    user_id     INT             NOT NULL,
+    ticker      VARCHAR(20)     NOT NULL,
+    quantity    DECIMAL(15, 4)  NOT NULL DEFAULT 0,
+
+    PRIMARY KEY (id),
+    UNIQUE (user_id, ticker),
+    CONSTRAINT fk_holdings_user FOREIGN KEY (user_id)
+        REFERENCES users (id)
+        ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_holdings_user_id ON holdings (user_id);
