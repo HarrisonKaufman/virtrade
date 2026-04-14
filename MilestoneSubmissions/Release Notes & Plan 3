@@ -1,0 +1,16 @@
+Release Notes - April 14
+
+Website Layout:
+  Added leaderboard, which shows the users with higest/lowest deposit amount 
+  Improved speed of feed, and is able to show more stocks at once. 
+
+Database:
+  New transactions table, to keep track of what user currently owns and what he can sell.
+  Can now buy/sell stocks which uses corresponding transactions table. 
+
+API:
+  Also shows stock related news (will later be implemented to specifically focus on stocks in your portfolio.
+
+Future Plan:
+  Make it easier to see current portfolio to know what to sell
+  Make sure that current features can't break in any way

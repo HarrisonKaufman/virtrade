@@ -7,13 +7,13 @@ async function getFinnhubQuote(symbol, requested) {
         }
         const data = await response.json();
         return data.data[requested];
-    } catch(error){
+    } catch (error) {
         console.error('Error:', error);
     }
 }
 
 //AV = alpha vantage
-async function getAVData(symbol, date, requested){
+async function getAVData(symbol, date, requested) {
     try {
         const response = await fetch(`http://localhost:8000/daily/${symbol}`);
         if (!response.ok) {
@@ -22,22 +22,34 @@ async function getAVData(symbol, date, requested){
         }
         const data = await response.json();
         const timeSeries = data.data['Time Series (Daily)'];
-        
+
         if (!timeSeries || !timeSeries[date]) {
             console.error(`No data for: ${date}`);
             return null;
         }
-        
+
         return timeSeries[date][requested];
-    } catch(error){
+    } catch (error) {
         console.error('Error:', error);
         return null;
     }
 }
 
-//finnhub wrapper functions
-function getQuote(symbol) {
-    return getFinnhubData(symbol, 'c'); //c = current price
+//getQuote for buy rooute
+async function getQuote(symbol) {
+    try {
+        const response = await fetch(`http://localhost:8000/quote/${symbol}`);
+        if (!response.ok) {
+            console.error('Error response:', response.status);
+            return null;
+        }
+        const data = await response.json();
+        return data.data[requested];
+    } catch (error) {
+        console.error('Error:', error);
+    }
+    //
+
 }
 
 function getChange(symbol) {
