@@ -80,12 +80,26 @@ const auth = (req, res, next) => {
 };
 
 app.get('/', (req, res) => {
-    res.render('pages/login');
+  res.render('pages/login');
 });
 
-app.get('/home', auth, (req, res) => {
-    res.render('pages/home');
+app.get('/home', auth, async (req, res) => {
+  try {
+    const symbols = ['AAPL', 'GOOGL', 'MSFT'];
+    const newsData = {};
+
+    for (const symbol of symbols) {
+      const data = await getCachedNews(symbol);
+      newsData[symbol] = data.articles || [];
+    }
+
+    res.render('pages/home', { newsData });
+  } catch (err) {
+    console.error('Error in /home route:', err);
+    res.render('pages/home', { newsData: {} });
+  }
 });
+
 
 app.get('/login', (req, res) => {
   res.render('pages/login');
@@ -99,7 +113,7 @@ app.post('/login', async (req, res) => {
   WHERE username = $1`;
   try {
     let result = await db.oneOrNone(query, [body.username]);
-    if(!result) {
+    if (!result) {
       throw new Error();
     }
     const match = await bcrypt.compare(body.password, result.password_hash);
@@ -116,7 +130,7 @@ app.post('/login', async (req, res) => {
 
 app.get('/register', (req, res) => {
   res.render('pages/register');
-}); 
+});
 
 app.post('/register', async (req, res) => {
   let body = req.body;
@@ -126,7 +140,7 @@ app.post('/register', async (req, res) => {
   VALUES
     ($1, $2, $3, $4)`;
   try {
-    if(!body.username || !body.password || !body.email) {
+    if (!body.username || !body.password || !body.email) {
       throw new Error();
     }
     const password_hash = await bcrypt.hash(body.password, 10);
@@ -138,9 +152,9 @@ app.post('/register', async (req, res) => {
 });
 
 app.get('/logout', auth, (req, res) => {
-    req.session.destroy(() => {
-      res.redirect('/login');
-    });
+  req.session.destroy(() => {
+    res.redirect('/login');
+  });
 });
 
 app.get('/profile', auth, async (req, res) => {
@@ -157,7 +171,7 @@ app.get('/profile', auth, async (req, res) => {
       balance: result.balance,
       is_active: result.is_active
     });
-  } catch(err) {
+  } catch (err) {
     res.redirect('/home');
   }
 });
@@ -170,7 +184,7 @@ app.post('/delete', auth, async (req, res) => {
   try {
     await db.none(query, [req.session.user]);
     res.redirect('/logout');
-  } catch(err) {
+  } catch (err) {
     res.redirect('/home');
   }
 });
@@ -203,40 +217,55 @@ app.get('/asset/:symbol', (req, res) => {
   res.render('pages/asset', { symbol });
 });
 
-app.post('/trade', (req, res) => {
+app.post('/trade', auth, async (req, res) => {
   const { symbol, quantity, action } = req.body;
-  // add user object/db logic here
-  res.redirect(`/asset/${symbol}`);
+  const userId = req.session.user;
+
+  try {
+    // Call Flask API which uses User.load_from_db() + user.buy()/sell() to update DB
+    const response = await axios.post(`http://api:5000/${action}`, {
+      user_id: userId,
+      symbol: symbol,
+      quantity: parseFloat(quantity)
+    });
+
+    res.redirect(`/asset/${symbol}`);
+  } catch (err) {
+    const errorMsg = err.response?.data?.error || 'Trade failed';
+    console.error('Trade error:', errorMsg);
+    res.redirect(`/asset/${symbol}`);
+  }
 });
+
 
 // API endpoints for testing
 app.get('/welcome', (req, res) => {
-  res.json({status: 'success', message: 'Welcome!'});
+  res.json({ status: 'success', message: 'Welcome!' });
 });
 
 // API endpoint for tests - JSON register endpoint  
 app.post('/api/register', async (req, res) => {
   try {
     const { username, email, password } = req.body;
-    
+
     // Validate input
     if (!username || !email || !password) {
       return res.status(400).json({ message: 'Invalid input' });
     }
-    
+
     // Validate email format
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
       return res.status(400).json({ message: 'Invalid input' });
     }
-    
+
     // Hash password
     const hashedPassword = await bcryptjs.hash(password, 10);
-    
+
     // Insert user into database with retry logic
     let retries = 3;
     let lastError;
-    
+
     while (retries > 0) {
       try {
         await db.none(
@@ -252,7 +281,7 @@ app.post('/api/register', async (req, res) => {
         }
       }
     }
-    
+
     throw lastError;
   } catch (error) {
     // Handle duplicate username or email
@@ -289,13 +318,35 @@ async function getOHLCForChart(symbol) {
       time: date,
       open: parseFloat(values['1. open']),
       high: parseFloat(values['2. high']),
-      low:  parseFloat(values['3. low']),
+      low: parseFloat(values['3. low']),
       close: parseFloat(values['4. close']),
     }))
     .sort((a, b) => a.time.localeCompare(b.time));
 
   cache[symbol] = { data: ohlc, timestamp: now };
   return ohlc;
+}
+
+const newsCache = {};
+const NEWS_CACHE_DURATION = 2 * 60 * 60 * 1000; // 2 hours in ms
+
+async function getCachedNews(symbol) {
+  const now = Date.now();
+
+  if (newsCache[symbol] && (now - newsCache[symbol].timestamp) < NEWS_CACHE_DURATION) {
+    console.log(`Using cached news for ${symbol}`);
+    return newsCache[symbol].data;
+  }
+
+  try {
+    const response = await axios.get(`http://api:5000/news/${symbol}`);
+    const data = response.data;
+    newsCache[symbol] = { data, timestamp: now };
+    return data;
+  } catch (err) {
+    console.error(`Error fetching news for ${symbol}:`, err.message);
+    return { articles: [] };
+  }
 }
 
 app.get("/feed", auth, async (req, res) => {
