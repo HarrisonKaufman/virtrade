@@ -85,15 +85,29 @@ app.get('/', (req, res) => {
 
 app.get('/home', auth, async (req, res) => {
   try {
-    const symbols = ['AAPL', 'GOOGL', 'MSFT'];
+    const user = await db.one(
+      `SELECT username, email, balance, is_active
+       FROM users
+       WHERE id = $1`,
+      [req.session.user]
+    );
+
+    const symbols = ['AAPL', 'TSLA', 'NVDA', 'AMZN', 'GOOGL', 'MSFT', 'META', 'NFLX'];
+
+    const newsResults = await Promise.all(
+      symbols.map(symbol => getCachedNews(symbol))
+    );
+
     const newsData = {};
+    symbols.forEach((symbol, i) => {
+      newsData[symbol] = newsResults[i].articles || [];
+    });
 
-    for (const symbol of symbols) {
-      const data = await getCachedNews(symbol);
-      newsData[symbol] = data.articles || [];
-    }
-
-    res.render('pages/home', { newsData });
+    res.render('pages/home', {
+      newsData,
+      username: user.username,
+      balance: user.balance,
+    });
   } catch (err) {
     console.error('Error in /home route:', err);
     res.render('pages/home', { newsData: {} });
