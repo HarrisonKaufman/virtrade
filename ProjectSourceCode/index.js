@@ -85,7 +85,22 @@ app.get('/', (req, res) => {
 
 app.get('/home', auth, async (req, res) => {
   try {
-    const symbols = ['AAPL', 'GOOGL', 'MSFT'];
+    const userId = req.session.user;
+    
+    // Get user's holdings (stocks in their portfolio)
+    const holdingsQuery = `
+      SELECT DISTINCT ticker
+      FROM holdings
+      WHERE user_id = $1 AND quantity > 0
+    `;
+    const holdings = await db.any(holdingsQuery, [userId]);
+    const symbols = holdings.map(h => h.ticker);
+    
+    // If user has no holdings, show some default stocks
+    if (symbols.length === 0) {
+      symbols.push('AAPL', 'GOOGL', 'MSFT');
+    }
+    
     const newsData = {};
 
     for (const symbol of symbols) {
