@@ -95,3 +95,31 @@ def get_news_for_symbol(symbol):
         return data
     except requests.exceptions.RequestException as e:
         return {'error': str(e), 'status_code': r.status_code if 'r' in locals() else None}
+    
+def get_finnhub_news(symbol, days_back=7):
+    import time
+
+    now = int(time.time())
+    from_time = now - days_back * 24 * 60 * 60
+
+    try:
+        news = finnhub_client.company_news(symbol, _from=time.strftime('%Y-%m-%d', time.gmtime(from_time)),
+                                           to=time.strftime('%Y-%m-%d', time.gmtime(now)))
+
+        # Keep only relevant fields + limit results
+        cleaned = []
+        for item in news[:10]:
+            if item.get("headline") and item.get("url"):
+                cleaned.append({
+                    "headline": item["headline"],
+                    "summary": item.get("summary"),
+                    "source": item.get("source"),
+                    "url": item.get("url"),
+                    "image": item.get("image"),
+                    "datetime": item.get("datetime")
+                })
+
+        return {"articles": cleaned}
+
+    except Exception as e:
+        return {"error": str(e)}
