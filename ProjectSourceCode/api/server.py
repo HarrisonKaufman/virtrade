@@ -1,5 +1,5 @@
 from flask import Flask, jsonify, request
-from api import get_finnhub_quote, get_alpha_vantage_daily,  get_news_for_symbol, get_finnhub_candle_data, get_twelve_data_daily, get_twelve_data_intraday
+from api import get_finnhub_quote, get_alpha_vantage_daily, get_finnhub_news, get_finnhub_candle_data, get_twelve_data_daily, get_twelve_data_intraday
 import sys, os
 sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'User'))
 from user import User, Stock
@@ -87,13 +87,17 @@ def sell():
 
 @app.route('/news/<symbol>', methods=['GET'])
 def news(symbol):
-    #get 3 most recent news stories for a stock symbol
     try:
-        data = get_news_for_symbol(symbol)
+        data = get_finnhub_news(symbol)
+
         if 'error' in data:
             return jsonify({'error': data.get('error')}), 400
-        articles = data.get('articles', [])
-        return jsonify({'symbol': symbol, 'articles': articles}), 200
+
+        return jsonify({
+            'symbol': symbol,
+            'articles': data.get('articles', [])
+        }), 200
+
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
@@ -131,5 +135,3 @@ def intraday(symbol):
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)
-
-app = Flask(__name__)

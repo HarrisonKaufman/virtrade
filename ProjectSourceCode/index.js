@@ -100,7 +100,7 @@ app.get('/home', auth, async (req, res) => {
 
     const newsData = {};
     symbols.forEach((symbol, i) => {
-      newsData[symbol] = newsResults[i].articles || [];
+      newsData[symbol] = newsResults[i];
     });
 
     res.render('pages/home', {
@@ -387,12 +387,19 @@ async function getCachedNews(symbol) {
 
   try {
     const response = await axios.get(`http://api:5000/news/${symbol}`);
-    const data = response.data;
-    newsCache[symbol] = { data, timestamp: now };
-    return data;
+
+    const articles = response.data?.articles || [];
+
+    newsCache[symbol] = {
+      data: articles,
+      timestamp: now
+    };
+
+    return articles;
+
   } catch (err) {
     console.error(`Error fetching news for ${symbol}:`, err.message);
-    return { articles: [] };
+    return [];
   }
 }
 
