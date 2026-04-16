@@ -33,8 +33,8 @@ const hbs = handlebars.create({
 
 // database configuration
 const dbConfig = {
-  host: 'db', // the database server
-  port: 5432, // the database port
+  host: process.env.POSTGRES_HOST, // the database server
+  port: process.env.POSTGRES_PORT || 5432, // the database port
   database: process.env.POSTGRES_DB, // the database name
   user: process.env.POSTGRES_USER, // the user account to connect with
   password: process.env.POSTGRES_PASSWORD, // the password of the user account
@@ -226,9 +226,30 @@ app.get('/changeSort', async (req, res) => {
   res.redirect('/leaderboard');
 });
 
-app.get('/asset/:symbol', (req, res) => {
+app.get('/asset/:symbol', auth, async (req, res) => {
   const symbol = req.params.symbol;
-  res.render('pages/asset', { symbol });
+  const userId = req.session.user;
+  
+  try {
+    // Get user's holdings for this symbol
+    const holdings = await db.oneOrNone(
+      `SELECT quantity FROM holdings WHERE user_id = $1 AND ticker = $2`,
+      [userId, symbol]
+    );
+    
+    const sharesHeld = holdings ? Math.floor(holdings.quantity) : 0; //change this line if we implement fractional sales
+    
+    res.render('pages/asset', { 
+      symbol,
+      sharesHeld 
+    });
+  } catch (err) {
+    console.error('Error fetching holdings:', err);
+    res.render('pages/asset', { 
+      symbol,
+      sharesHeld: 0 
+    });
+  }
 });
 
 app.post('/trade', auth, async (req, res) => {
