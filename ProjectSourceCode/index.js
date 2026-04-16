@@ -237,7 +237,7 @@ app.get('/asset/:symbol', auth, async (req, res) => {
       [userId, symbol]
     );
     
-    const sharesHeld = holdings ? Math.floor(holdings.quantity) : 0;
+    const sharesHeld = holdings ? Math.floor(holdings.quantity) : 0; //change this line if we implement fractional sales
     
     res.render('pages/asset', { 
       symbol,

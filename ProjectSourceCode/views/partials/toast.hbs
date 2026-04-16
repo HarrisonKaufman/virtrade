@@ -1,0 +1,28 @@
+{{#if message}}
+<div class="position-fixed bottom-0 end-0 p-3" style="z-index: 11">
+  <div class="toast show" role="alert" aria-live="assertive" aria-atomic="true">
+    <div class="toast-header">
+      <strong class="me-auto">
+        {{#if type}}
+          {{#eq type 'error'}}<span style="color: #dc3545;">Error</span>{{/eq}}
+          {{#eq type 'success'}}<span style="color: #198754;">Success</span>{{/eq}}
+          {{#eq type 'warning'}}<span style="color: #ff6c00;">Warning</span>{{/eq}}
+          {{#eq type 'info'}}<span style="color: #0dcaf0;">Info</span>{{/eq}}
+        {{else}}
+          <span style="color: #0dcaf0;">Message</span>
+        {{/if}}
+      </strong>
+      <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+    </div>
+    <div class="toast-body">
+      {{message}}
+    </div>
+  </div>
+</div>
+<script>
+  // Auto-dismiss after 5 seconds
+  setTimeout(() => {
+    document.querySelector('.toast')?.remove();
+  }, 5000);
+</script>
+{{/if}}
