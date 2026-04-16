@@ -1,5 +1,10 @@
 {{> title}}
 
+<div class="container mt-5 text-center">
+  <h1>Welcome back, {{username}}</h1>
+  <h3>Balance: ${{balance}}</h3>
+</div>
+
 <div class="container mt-5">
   <h1>Stock Market News</h1>
   <p class="lead">Latest news for popular stocks</p>
@@ -15,16 +20,13 @@
             <div class="news-item mb-3 pb-3 border-bottom">
               <h5 class="card-title">
                 <a href="{{url}}" target="_blank" class="text-decoration-none">
-                  {{title}}
+                  {{headline}}
                 </a>
               </h5>
               <p class="card-text text-muted small">
-                {{source.name}} • {{publishedAt}}
+                {{source}}
               </p>
-              <p class="card-text">{{description}}</p>
-              {{#if urlToImage}}
-                <img src="{{urlToImage}}" alt="Article Image" class="img-fluid rounded" style="max-width: 300px;">
-              {{/if}}
+              <p class="card-text">{{summary}}</p>
             </div>
           {{/each}}
         {{else}}
