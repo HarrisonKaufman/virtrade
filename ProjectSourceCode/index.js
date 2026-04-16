@@ -43,6 +43,11 @@ const dbConfig = {
 
 const db = pgp(dbConfig);
 
+// Test database connection on startup
+db.one('SELECT 1')
+  .then(() => console.log('Database connection successful'))
+  .catch(error => console.error('Database connection error:', error.message));
+
 // *****************************************************
 // <!-- Section 3 : App Settings -->
 // *****************************************************
@@ -449,4 +454,7 @@ app.get("/feed", auth, async (req, res) => {
 // <!-- Section 5 : Start Server-->
 // *****************************************************
 
-module.exports = app.listen(3000);
+const PORT = process.env.PORT || 3000;
+module.exports = app.listen(PORT, () => {
+  console.log(`Server is running on port ${PORT}`);
+});
