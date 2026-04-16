@@ -263,8 +263,9 @@ app.post('/trade', auth, async (req, res) => {
   const userId = req.session.user;
 
   try {
-    // Call Flask API which uses User.load_from_db() + user.buy()/sell() to update DB
-    const response = await axios.post(`http://api:5000/${action}`, {
+    // On Render, use the external Python API URL
+    const apiUrl = process.env.PYTHON_API_URL || `http://api:5000`;
+    const response = await axios.post(`${apiUrl}/${action}`, {
       user_id: userId,
       symbol: symbol,
       quantity: parseFloat(quantity)
@@ -378,7 +379,8 @@ async function getIntradayForChart(symbol) {
     return cache[cacheKey].data;
   }
 
-  const response = await fetch(`http://api:5000/intraday/${symbol}`);
+  const apiUrl = process.env.PYTHON_API_URL || `http://api:5000`;
+  const response = await fetch(`${apiUrl}/intraday/${symbol}`);
   const data = await response.json();
   const values = data.data?.values;
 
@@ -413,7 +415,8 @@ async function getCachedNews(symbol) {
   }
 
   try {
-    const response = await axios.get(`http://api:5000/news/${symbol}`);
+    const apiUrl = process.env.PYTHON_API_URL || `http://api:5000`;
+    const response = await axios.get(`${apiUrl}/news/${symbol}`);
 
     const articles = response.data?.articles || [];
 
