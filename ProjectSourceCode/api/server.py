@@ -1,5 +1,5 @@
 from flask import Flask, jsonify, request
-from api import get_finnhub_quote, get_alpha_vantage_daily, get_finnhub_news, get_finnhub_candle_data, get_twelve_data_daily, get_twelve_data_intraday
+from api import get_finnhub_quote, get_alpha_vantage_daily, get_finnhub_news, get_finnhub_candle_data, get_twelve_data_daily, get_twelve_data_intraday, get_combined_news_summary
 import sys, os
 sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'User'))
 from user import User, Stock
@@ -15,7 +15,6 @@ def quote(symbol):
         return jsonify({'symbol': symbol, 'data': data}), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
-
 
 @app.route('/daily/<symbol>', methods=['GET'])
 def daily(symbol):
@@ -98,6 +97,56 @@ def news(symbol):
             'articles': data.get('articles', [])
         }), 200
 
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/news-summary/<symbol>', methods=['GET'])
+def news_summary(symbol):
+    """
+    Get news articles for a symbol with Gemini-powered summaries.
+    Each article includes the original data plus a 'gemini_summary' field.
+    """
+    try:
+        data = get_finnhub_news(symbol)
+
+        if 'error' in data:
+            return jsonify({'error': data.get('error')}), 400
+
+        articles = data.get('articles', [])
+
+        return jsonify({
+            'symbol': symbol,
+            'articles': articles
+        }), 200
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/news-combined-summary/<symbol>', methods=['GET'])
+def news_combined_summary(symbol):
+    try:
+        combined_summary = get_combined_news_summary(symbol)
+        
+        # if summary available, return it
+        if combined_summary:
+            return jsonify({
+                'symbol': symbol,
+                'summary': combined_summary
+            }), 200
+        
+        # fallback: return articles without summary
+        data = get_finnhub_news(symbol)
+        if 'error' in data:
+            return jsonify({'error': data.get('error')}), 400
+        
+        return jsonify({
+            'symbol': symbol,
+            'articles': data.get('articles', []),
+            'note': 'Summary unavailable, returning articles'
+        }), 200
+    
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
