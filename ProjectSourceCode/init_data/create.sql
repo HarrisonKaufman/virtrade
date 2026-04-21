@@ -49,5 +49,5 @@ CREATE TABLE IF NOT EXISTS followers (
         REFERENCES users (id),
 
     CONSTRAINT fk_followed_id FOREIGN KEY (followed_id)
-        REFERENCES users (id),
+        REFERENCES users (id)
 );

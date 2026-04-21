@@ -178,18 +178,27 @@ app.get('/logout', auth, (req, res) => {
 });
 
 app.get('/profile', auth, async (req, res) => {
-  const query = `
+  const userQuery = `
     SELECT *
     FROM users
     WHERE id = $1
     `;
+  const followedQuery = `
+    SELECT u.username, u.balance 
+    FROM followers f
+    INNER JOIN users u
+      ON f.followed_id = u.id 
+    WHERE f.follower_id = $1
+  `;
   try {
-    const result = await db.one(query, [req.session.user]);
+    const result = await db.one(userQuery, [req.session.user]);
+    const followed = await db.any(followedQuery, [req.session.user]);
     res.render('pages/profile', {
       username: result.username,
       email: result.email,
       balance: result.balance,
-      is_active: result.is_active
+      is_active: result.is_active,
+      followers: followed
     });
   } catch (err) {
     res.redirect('/home');
