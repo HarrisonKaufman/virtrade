@@ -40,3 +40,14 @@ CREATE TABLE IF NOT EXISTS holdings (
 );
 
 CREATE INDEX IF NOT EXISTS idx_holdings_user_id ON holdings (user_id);
+
+CREATE TABLE IF NOT EXISTS followers (
+    follower_id     INT     NOT NULL,
+    followed_id     INT     NOT NULL,
+
+    CONSTRAINT fk_follower_id FOREIGN KEY (follower_id)
+        REFERENCES users (id),
+
+    CONSTRAINT fk_followed_id FOREIGN KEY (followed_id)
+        REFERENCES users (id),
+);

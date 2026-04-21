@@ -232,6 +232,27 @@ app.get('/changeSort', async (req, res) => {
   res.redirect('/leaderboard');
 });
 
+app.post('/follow', async (req, res) => {
+  let body = req.body;
+  const insertQuery = `
+    INSERT INTO followers
+      (follower_id, followed_id)
+    VALUES
+      ($1, $2)
+  `;
+  const followedQuery = `
+    SELECT id
+    FROM users
+    WHERE username = $1
+  `;
+  try {
+    const followed_id = (await db.one(followedQuery, [body.username])).id;
+    db.none(insertQuery, [req.session.user, followed_id]);
+  } catch(err) {
+    res.redirect('/profile');
+  }
+});
+
 app.get('/asset/:symbol', auth, async (req, res) => {
   const symbol = req.params.symbol;
   const userId = req.session.user;
