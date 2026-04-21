@@ -1,0 +1,16 @@
+TA Meeting Notes
+
+We will Cloud Host our website using Render and presenting the project soon next week.
+
+Mihai - Worked on Leaderboard showing players with the highest deposit values and also have the ability to instead show the lowest deposit values via 
+user. Am planning on working more on account interaction, perhaps also making a friends mechanic. 
+
+Harrisson - Worked on the Home Page so now it populates with News Stories on Stocks. Will later make sure that it specifically focuses on Stocks about
+the portfolio, and caching stories so it doesn't very quickly hits the rate limit. 
+
+Dylan - Implemented Twelve Data API for the feed and added more stocks to the feed since we can use more queries per minute. Fixed issue with the asset 
+page not showing correct data. Caches also so that it won't have too many repeated queries.
+
+Ian - Worked on Python Script for user and database. Setup stock class to keep track of holdings and other important things 
+
+Austin - Worked on Buy/Sell so that it connects to the database, and user can do transactions based off the stocks.
