@@ -5,30 +5,86 @@
   <h3>Balance: ${{balance}}</h3>
 </div>
 
+<div class="container mt-4">
+  <h2>Your Holdings</h2>
+
+  {{#if holdings.length}}
+    <table class="table table-dark table-hover mt-3">
+      <thead>
+        <tr>
+          <th>Ticker</th>
+          <th>Quantity</th>
+          <th>Current Price</th>
+          <th>Market Value</th>
+        </tr>
+      </thead>
+      <tbody>
+        {{#each holdings}}
+          <tr>
+            <td><strong>{{ticker}}</strong></td>
+            <td>{{quantity}}</td>
+            <td>${{price}}</td>
+            <td>${{market_value}}</td>
+          </tr>
+        {{/each}}
+      </tbody>
+    </table>
+  {{else}}
+    <p class="text-muted mt-3">You don't have any holdings yet.</p>
+  {{/if}}
+</div>
+
 <div class="container mt-5">
-  <h1>Stock Market News</h1>
+  <h2>Stock Market News</h2>
   <p class="lead">Latest news for popular stocks</p>
 
   {{#each newsData}}
-    <div class="card mt-4">
-      <div class="card-header bg-dark text-white">
-        <h3 class="mb-0">{{@key}}</h3>
+    <div class="card mt-3 news-card">
+      <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">{{@key}}</h5>
+        {{#if this}}
+        <button
+          class="btn btn-sm btn-outline-light toggle-btn"
+          data-bs-toggle="collapse"
+          data-bs-target="#news-{{@key}}"
+          aria-expanded="false"
+        >
+          + 2 more
+        </button>
+        {{/if}}
       </div>
+
       <div class="card-body">
         {{#if this}}
-          {{#each this}}
-            <div class="news-item mb-3 pb-3 border-bottom">
-              <h5 class="card-title">
-                <a href="{{url}}" target="_blank" class="text-decoration-none">
-                  {{headline}}
-                </a>
-              </h5>
-              <p class="card-text text-muted small">
-                {{source}}
-              </p>
-              <p class="card-text">{{summary}}</p>
-            </div>
-          {{/each}}
+
+          {{! Always show the first story }}
+          <div class="news-item mb-3 pb-3 border-bottom">
+            <h6 class="card-title">
+              <a href="{{this.[0].url}}" target="_blank" class="text-decoration-none">
+                {{this.[0].headline}}
+              </a>
+            </h6>
+            <p class="card-text text-muted small mb-1">{{this.[0].source}}</p>
+            <p class="card-text small">{{this.[0].summary}}</p>
+          </div>
+
+          {{! Collapse the rest }}
+          <div class="collapse" id="news-{{@key}}">
+            {{#each this}}
+              {{#unless @first}}
+                <div class="news-item mb-3 pb-3 border-bottom">
+                  <h6 class="card-title">
+                    <a href="{{url}}" target="_blank" class="text-decoration-none">
+                      {{headline}}
+                    </a>
+                  </h6>
+                  <p class="card-text text-muted small mb-1">{{source}}</p>
+                  <p class="card-text small">{{summary}}</p>
+                </div>
+              {{/unless}}
+            {{/each}}
+          </div>
+
         {{else}}
           <p class="text-muted">No news available for this stock.</p>
         {{/if}}
@@ -42,19 +98,37 @@
     </div>
   {{/unless}}
 </div>
- 
+
 <style>
   .news-item:last-child {
     border-bottom: none !important;
   }
-  
+
   .news-item a {
     font-weight: 500;
     color: #b2c5ff;
   }
-  
+
   .news-item a:hover {
     text-decoration: underline !important;
   }
+
+  .toggle-btn {
+    font-size: 0.75rem;
+    min-width: 80px;
+  }
 </style>
 
+<script>
+  document.querySelectorAll('[data-bs-toggle="collapse"]').forEach(btn => {
+    const target = document.querySelector(btn.dataset.bsTarget);
+    if (!target) return;
+
+    target.addEventListener('show.bs.collapse', () => {
+      btn.textContent = '− Show less';
+    });
+    target.addEventListener('hide.bs.collapse', () => {
+      btn.textContent = '+ 2 more';
+    });
+  });
+</script>
