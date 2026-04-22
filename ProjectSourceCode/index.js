@@ -127,24 +127,19 @@ app.get('/login', (req, res) => {
 
 app.post('/login', async (req, res) => {
   let body = req.body;
-  const query = `
-  SELECT *
-  FROM users
-  WHERE username = $1`;
+  const query = `SELECT * FROM users WHERE username = $1`;
   try {
     let result = await db.oneOrNone(query, [body.username]);
-    if (!result) {
-      throw new Error();
-    }
+    if (!result) throw new Error();
+
     const match = await bcrypt.compare(body.password, result.password_hash);
-    if (!match) {
-      throw new Error();
-    }
+    if (!match) throw new Error();
+
     req.session.user = result.id;
     req.session.save();
     res.redirect('/home');
   } catch (err) {
-    res.render('pages/login');
+    res.render('pages/login', { error: 'Invalid username or password.' });
   }
 });
 
@@ -154,20 +149,22 @@ app.get('/register', (req, res) => {
 
 app.post('/register', async (req, res) => {
   let body = req.body;
-  const query = `
-  INSERT INTO users
-    (username, email, password_hash, balance)
-  VALUES
-    ($1, $2, $3, $4)`;
+  const query = `INSERT INTO users (username, email, password_hash, balance) VALUES ($1, $2, $3, $4)`;
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
   try {
     if (!body.username || !body.password || !body.email) {
-      throw new Error();
+      return res.render('pages/register', { error: 'All fields are required.', body });
     }
+    if (!emailRegex.test(body.email)) {
+      return res.render('pages/register', { error: 'Please enter a valid email address.', body });
+    }
+
     const password_hash = await bcrypt.hash(body.password, 10);
     await db.none(query, [body.username, body.email, password_hash, 1000]);
     res.redirect('/login');
   } catch (err) {
-    res.redirect('/register');
+    res.render('pages/register', { error: 'An account with that username or email already exists.', body });
   }
 });
 
