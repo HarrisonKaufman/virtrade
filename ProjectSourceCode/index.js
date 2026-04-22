@@ -33,14 +33,20 @@ const hbs = handlebars.create({
 
 // database configuration
 const dbConfig = {
-  host: 'db', // the database server
-  port: 5432, // the database port
+  host: process.env.POSTGRES_HOST, // the database server
+  port: process.env.POSTGRES_PORT || 5432, // the database port
   database: process.env.POSTGRES_DB, // the database name
   user: process.env.POSTGRES_USER, // the user account to connect with
   password: process.env.POSTGRES_PASSWORD, // the password of the user account
+  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false, // SSL for production (Render)
 };
 
 const db = pgp(dbConfig);
+
+// Test database connection on startup
+db.one('SELECT 1')
+  .then(() => console.log('Database connection successful'))
+  .catch(error => console.error('Database connection error:', error.message));
 
 // *****************************************************
 // <!-- Section 3 : App Settings -->
@@ -237,7 +243,7 @@ app.get('/asset/:symbol', auth, async (req, res) => {
       [userId, symbol]
     );
     
-    const sharesHeld = holdings ? Math.floor(holdings.quantity) : 0;
+    const sharesHeld = holdings ? Math.floor(holdings.quantity) : 0; //change this line if we implement fractional sales
     
     res.render('pages/asset', { 
       symbol,
@@ -257,8 +263,9 @@ app.post('/trade', auth, async (req, res) => {
   const userId = req.session.user;
 
   try {
-    // Call Flask API which uses User.load_from_db() + user.buy()/sell() to update DB
-    const response = await axios.post(`http://api:5000/${action}`, {
+    // On Render, use the external Python API URL
+    const apiUrl = process.env.PYTHON_API_URL || `http://api:5000`;
+    const response = await axios.post(`${apiUrl}/${action}`, {
       user_id: userId,
       symbol: symbol,
       quantity: parseFloat(quantity)
@@ -372,7 +379,8 @@ async function getIntradayForChart(symbol) {
     return cache[cacheKey].data;
   }
 
-  const response = await fetch(`http://api:5000/intraday/${symbol}`);
+  const apiUrl = process.env.PYTHON_API_URL || `http://api:5000`;
+  const response = await fetch(`${apiUrl}/intraday/${symbol}`);
   const data = await response.json();
   const values = data.data?.values;
 
@@ -407,7 +415,8 @@ async function getCachedNews(symbol) {
   }
 
   try {
-    const response = await axios.get(`http://api:5000/news/${symbol}`);
+    const apiUrl = process.env.PYTHON_API_URL || `http://api:5000`;
+    const response = await axios.get(`${apiUrl}/news/${symbol}`);
 
     const articles = response.data?.articles || [];
 
@@ -448,4 +457,7 @@ app.get("/feed", auth, async (req, res) => {
 // <!-- Section 5 : Start Server-->
 // *****************************************************
 
-module.exports = app.listen(3000);
+const PORT = process.env.PORT || 3000;
+module.exports = app.listen(PORT, () => {
+  console.log(`Server is running on port ${PORT}`);
+});
