@@ -109,14 +109,26 @@ app.get('/home', auth, async (req, res) => {
       newsData[symbol] = newsResults[i];
     });
 
+    // Fetch holdings from Flask backend using configured Python API URL
+    let holdings = [];
+    try {
+      const apiUrl = process.env.PYTHON_API_URL || 'http://api:5000';
+      const response = await axios.get(`${apiUrl}/holdings/${req.session.user}`);
+      const data = response.data;
+      holdings = Array.isArray(data.holdings) ? data.holdings : [];
+    } catch (e) {
+      console.error('Error fetching holdings from Flask:', e);
+    }
+
     res.render('pages/home', {
       newsData,
       username: user.username,
-      balance: user.balance,
+      balance: Number(user.balance).toFixed(2),
+      holdings,
     });
   } catch (err) {
     console.error('Error in /home route:', err);
-    res.render('pages/home', { newsData: {} });
+    res.render('pages/home', { newsData: {}, holdings: [] });
   }
 });
 

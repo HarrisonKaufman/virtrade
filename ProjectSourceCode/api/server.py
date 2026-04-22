@@ -132,6 +132,31 @@ def intraday(symbol):
         return jsonify({'symbol': symbol, 'data': data}), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+    
+@app.route('/holdings/<int:user_id>', methods=['GET'])
+def holdings(user_id):
+    user = User.load_from_db(user_id)
+    if not user:
+        return jsonify({'error': 'User not found'}), 404
+
+    # Get live prices for all held tickers
+    holdings_list = []
+    for ticker, quantity in user.holdings.items():
+        try:
+            quote = get_finnhub_quote(ticker)
+            price = quote.get('c', 0)
+        except:
+            price = 0
+
+        market_value = round(quantity * price, 2)
+        holdings_list.append({
+            'ticker': ticker,
+            'quantity': float(quantity),
+            'price': price,
+            'market_value': market_value
+        })
+
+    return jsonify({'holdings': holdings_list}), 200
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)
