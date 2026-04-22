@@ -272,14 +272,12 @@ app.post('/trade', auth, async (req, res) => {
   const userId = req.session.user;
 
   try {
-    // On Render, use the external Python API URL
-    const apiUrl = process.env.PYTHON_API_URL || `http://api:5000`;
-    const response = await axios.post(`${apiUrl}/${action}`, {
+    const apiUrl = process.env.PYTHON_API_URL || 'http://api:5000';
+    await axios.post(`${apiUrl}/${action}`, {
       user_id: userId,
       symbol: symbol,
       quantity: parseFloat(quantity)
     });
-
     res.redirect(`/asset/${symbol}`);
   } catch (err) {
     const errorMsg = err.response?.data?.error || 'Trade failed';
