@@ -29,8 +29,8 @@ def buy():
 
     try:
         quote_data = get_finnhub_quote(symbol)
-        price = quote_data['c']
-        if price is None or price == 0:
+        price = quote_data.get('c')
+        if not price:
             return jsonify({'error': 'Could not fetch stock price'}), 400
     except Exception as e:
         return jsonify({'error': str(e)}), 500
@@ -56,8 +56,8 @@ def sell():
 
     try:
         quote_data = get_finnhub_quote(symbol)
-        price = quote_data['c']
-        if price is None or price == 0:
+        price = quote_data.get('c')
+        if not price:
             return jsonify({'error': 'Could not fetch stock price'}), 400
     except Exception as e:
         return jsonify({'error': str(e)}), 500
@@ -123,7 +123,7 @@ def holdings(user_id):
     for ticker, quantity in user.holdings.items():
         try:
             quote = get_finnhub_quote(ticker)
-            price = quote['c']
+            price = quote.get('c')
         except:
             price = 0
         market_value = round(quantity * price, 2)
