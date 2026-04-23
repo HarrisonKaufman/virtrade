@@ -82,4 +82,8 @@ def get_finnhub_news(symbol, days_back=3):
         return {"articles": cleaned}
 
     except Exception as e:
-        return {"error": str(e)}
+
+    import traceback
+    print(f"[ERROR] get_finnhub_news failed for {symbol}: {str(e)}")
+    traceback.print_exc()
+    return {"error": str(e)}

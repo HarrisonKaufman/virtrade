@@ -386,28 +386,41 @@ async function getIntradayForChart(symbol) {
     return cache[cacheKey].data;
   }
 
-  const apiUrl = process.env.PYTHON_API_URL || `http://api:5000`;
-  const response = await fetch(`${apiUrl}/intraday/${symbol}`);
-  const data = await response.json();
-  const values = data.data?.values;
+  try {
+    const apiUrl = process.env.PYTHON_API_URL || `http://api:5000`;
+    const response = await fetch(`${apiUrl}/intraday/${symbol}`);
+    
+    if (!response.ok) {
+      console.error(`[${response.status}] API error for intraday ${symbol}: ${response.statusText}`);
+      return cache[cacheKey]?.data || [];
+    }
 
-  if (!values) {
-    console.error(`Bad intraday response for ${symbol}`);
+    const data = await response.json();
+    console.log(`[Intraday ${symbol}] Raw response:`, JSON.stringify(data).substring(0, 200));
+    
+    const values = data.data?.values;
+
+    if (!values) {
+      console.error(`Bad intraday response for ${symbol}: expected data.data.values, got:`, JSON.stringify(data).substring(0, 300));
+      return cache[cacheKey]?.data || [];
+    }
+
+    const ohlc = values
+      .map(v => ({
+        time: Math.floor(new Date(v.datetime).getTime() / 1000), // convert to Unix timestamp
+        open: parseFloat(v.open),
+        high: parseFloat(v.high),
+        low:  parseFloat(v.low),
+        close: parseFloat(v.close),
+      }))
+      .sort((a, b) => a.time - b.time);
+
+    cache[cacheKey] = { data: ohlc, timestamp: now };
+    return ohlc;
+  } catch (err) {
+    console.error(`Error fetching intraday for ${symbol}:`, err.message);
     return cache[cacheKey]?.data || [];
   }
-
-  const ohlc = values
-    .map(v => ({
-      time: Math.floor(new Date(v.datetime).getTime() / 1000), // convert to Unix timestamp
-      open: parseFloat(v.open),
-      high: parseFloat(v.high),
-      low:  parseFloat(v.low),
-      close: parseFloat(v.close),
-    }))
-    .sort((a, b) => a.time - b.time);
-
-  cache[cacheKey] = { data: ohlc, timestamp: now };
-  return ohlc;
 }
   
 const newsCache = {};
@@ -435,8 +448,18 @@ async function getCachedNews(symbol) {
     return articles;
 
   } catch (err) {
-    console.error(`Error fetching news for ${symbol}:`, err.message);
-    return [];
+    const statusCode = err.response?.status;
+    if (statusCode === 429) {
+      console.error(`[429 Rate Limited] Fetching news for ${symbol}. Will retry later.`);
+    } else if (statusCode >= 500) {
+      console.error(`[${statusCode} Server Error] Fetching news for ${symbol}`);
+    } else if (statusCode) {
+      console.error(`[${statusCode}] Error fetching news for ${symbol}: ${err.message}`);
+    } else {
+      console.error(`[No Response] Error fetching news for ${symbol}:`, err.message);
+    }
+    // Return cached data if available, otherwise empty array
+    return newsCache[symbol]?.data || [];
   }
 }
 
@@ -454,9 +477,11 @@ app.get("/feed", auth, async (req, res) => {
 
   const tickers = await Promise.all(symbols.map(async (t) => {
     const intradayData = await getIntradayForChart(t.symbol);
+    console.log(`[Feed] ${t.symbol}: ${intradayData.length} data points`);
     return { ...t, intradayData };
   }));
 
+  console.log(`[Feed] Rendering with ${tickers.length} tickers`);
   res.render('pages/feed', { tickers });
 });
 
