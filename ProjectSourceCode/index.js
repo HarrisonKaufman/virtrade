@@ -109,14 +109,26 @@ app.get('/home', auth, async (req, res) => {
       newsData[symbol] = newsResults[i];
     });
 
+    // Fetch holdings from Flask backend using configured Python API URL
+    let holdings = [];
+    try {
+      const apiUrl = process.env.PYTHON_API_URL || 'http://api:5000';
+      const response = await axios.get(`${apiUrl}/holdings/${req.session.user}`);
+      const data = response.data;
+      holdings = Array.isArray(data.holdings) ? data.holdings : [];
+    } catch (e) {
+      console.error('Error fetching holdings from Flask:', e);
+    }
+
     res.render('pages/home', {
       newsData,
       username: user.username,
-      balance: user.balance,
+      balance: Number(user.balance).toFixed(2),
+      holdings,
     });
   } catch (err) {
     console.error('Error in /home route:', err);
-    res.render('pages/home', { newsData: {} });
+    res.render('pages/home', { newsData: {}, holdings: [] });
   }
 });
 
@@ -127,24 +139,19 @@ app.get('/login', (req, res) => {
 
 app.post('/login', async (req, res) => {
   let body = req.body;
-  const query = `
-  SELECT *
-  FROM users
-  WHERE username = $1`;
+  const query = `SELECT * FROM users WHERE username = $1`;
   try {
     let result = await db.oneOrNone(query, [body.username]);
-    if (!result) {
-      throw new Error();
-    }
+    if (!result) throw new Error();
+
     const match = await bcrypt.compare(body.password, result.password_hash);
-    if (!match) {
-      throw new Error();
-    }
+    if (!match) throw new Error();
+
     req.session.user = result.id;
     req.session.save();
     res.redirect('/home');
   } catch (err) {
-    res.render('pages/login');
+    res.render('pages/login', { error: 'Invalid username or password.' });
   }
 });
 
@@ -154,20 +161,22 @@ app.get('/register', (req, res) => {
 
 app.post('/register', async (req, res) => {
   let body = req.body;
-  const query = `
-  INSERT INTO users
-    (username, email, password_hash, balance)
-  VALUES
-    ($1, $2, $3, $4)`;
+  const query = `INSERT INTO users (username, email, password_hash, balance) VALUES ($1, $2, $3, $4)`;
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
   try {
     if (!body.username || !body.password || !body.email) {
-      throw new Error();
+      return res.render('pages/register', { error: 'All fields are required.', body });
     }
+    if (!emailRegex.test(body.email)) {
+      return res.render('pages/register', { error: 'Please enter a valid email address.', body });
+    }
+
     const password_hash = await bcrypt.hash(body.password, 10);
     await db.none(query, [body.username, body.email, password_hash, 1000]);
     res.redirect('/login');
   } catch (err) {
-    res.redirect('/register');
+    res.render('pages/register', { error: 'An account with that username or email already exists.', body });
   }
 });
 
@@ -263,14 +272,12 @@ app.post('/trade', auth, async (req, res) => {
   const userId = req.session.user;
 
   try {
-    // On Render, use the external Python API URL
-    const apiUrl = process.env.PYTHON_API_URL || `http://api:5000`;
-    const response = await axios.post(`${apiUrl}/${action}`, {
+    const apiUrl = process.env.PYTHON_API_URL || 'http://api:5000';
+    await axios.post(`${apiUrl}/${action}`, {
       user_id: userId,
       symbol: symbol,
       quantity: parseFloat(quantity)
     });
-
     res.redirect(`/asset/${symbol}`);
   } catch (err) {
     const errorMsg = err.response?.data?.error || 'Trade failed';
