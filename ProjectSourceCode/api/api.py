@@ -2,18 +2,27 @@ import os
 import requests
 import finnhub
 from dotenv import load_dotenv
+import google.generativeai as genai
 
 load_dotenv()
 
 FINNHUB_API_KEY = os.getenv('FINNHUB_API_KEY')
 ALPHA_VANTAGE_API_KEY = os.getenv('ALPHA_VANTAGE_API_KEY')
 NEWS_API_KEY = os.getenv('NEWS_API_KEY')
+GEMINI_API_KEY = os.getenv('GEMINI_API_KEY')
 
 FINNHUB_BASE_URL = 'https://finnhub.io/api/v1'
 ALPHA_VANTAGE_BASE_URL = 'https://www.alphavantage.co/query'
 NEWS_API_BASE_URL = 'https://newsapi.org/v2'
 
 finnhub_client = finnhub.Client(api_key=FINNHUB_API_KEY)
+
+# configure gemini api
+if GEMINI_API_KEY:
+    genai.configure(api_key=GEMINI_API_KEY)
+    gemini_model = genai.GenerativeModel('gemini-pro')
+else:
+    gemini_model = None
 
 TWELVE_DATA_API_KEY = os.getenv('TWELVE_DATA_API_KEY')
 
@@ -70,6 +79,7 @@ def get_twelve_data_intraday(symbol, interval='1h', outputsize=168):
     }
     r = requests.get(url, params=params)
     return r.json()
+
 #this gets 3 most recent news stories for a given stock symbol
 def get_news_for_symbol(symbol):
     url = f'{NEWS_API_BASE_URL}/everything'
@@ -134,7 +144,82 @@ def get_finnhub_news(symbol, days_back=3):
             if len(cleaned) >= 3:
                 break
 
-        return {"articles": cleaned}
+        if not cleaned:
+            return {'error': 'No relevant articles found', 'articles': []}
+        return {'articles': cleaned}
 
     except Exception as e:
-        return {"error": str(e)}
+        return {'error': str(e), 'articles': []}
+
+
+def summarize_articles_with_gemini(articles):
+
+    #generate summaries for articles given list
+    if not gemini_model:
+        # fallback: keep original summary if Gemini not configured
+        return articles
+    
+    try:
+        for article in articles:
+            headline = article.get('headline', '')
+            original_summary = article.get('summary', '')
+            
+            # keep the original Finnhub summary
+            if 'original_summary' not in article and original_summary:
+                article['original_summary'] = original_summary
+            
+            if headline:
+                # Create a concise summary prompt focused on investment impact
+                prompt = f"""Provide a brief 1-2 sentence investment-focused summary of this financial news: '{headline}'
+Focus on market implications and relevance for traders/investors."""
+                response = gemini_model.generate_content(prompt, generation_config=genai.types.GenerationConfig(max_output_tokens=100))
+                article['summary'] = response.text if response else original_summary
+            else:
+                article['summary'] = original_summary if original_summary else 'No summary available'
+        return articles
+    except Exception as e:
+        # Fallback on error - keep original summaries
+        return articles
+
+
+def get_combined_news_summary(symbol):
+    """
+    Gets news for a symbol and returns a combined AI-generated summary of all articles.
+    Uses Gemini API to synthesize key information from multiple articles.
+    """
+    try:
+        news_data = get_finnhub_news(symbol)
+        
+        if 'error' in news_data:
+            return None
+        
+        articles = news_data.get('articles', [])
+        if not articles:
+            return None
+        
+        if not gemini_model:
+            # Fallback: return headline of most recent article
+            return articles[0].get('headline', 'No summary available')
+        
+        # Combine article headlines and summaries for Gemini to synthesize
+        article_texts = []
+        for article in articles:
+            headline = article.get('headline', '')
+            if headline:
+                article_texts.append(f"- {headline}")
+        
+        if not article_texts:
+            return None
+        
+        combined_articles = "\n".join(article_texts)
+        prompt = f"""Provide a concise 2-3 sentence summary of the overall market sentiment for {symbol} based on these recent news headlines:
+{combined_articles}
+
+Focus on key market implications and investment sentiment."""
+        
+        response = gemini_model.generate_content(prompt, generation_config=genai.types.GenerationConfig(max_output_tokens=200))
+        return response.text if response else None
+    
+    except Exception as e:
+        # Fallback on error
+        return None

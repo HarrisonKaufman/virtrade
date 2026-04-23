@@ -104,9 +104,17 @@ app.get('/home', auth, async (req, res) => {
       symbols.map(symbol => getCachedNews(symbol))
     );
 
+    const summaryResults = await Promise.all(
+      symbols.map(symbol => getCachedNewsSummary(symbol))
+    );
+
     const newsData = {};
     symbols.forEach((symbol, i) => {
-      newsData[symbol] = newsResults[i];
+      newsData[symbol] = {
+        articles: newsResults[i],
+        summary: summaryResults[i]
+      };
+      console.log(`[Home] ${symbol}: ${newsResults[i].length} articles, summary: ${summaryResults[i] ? 'YES' : 'NO'}`);
     });
 
     res.render('pages/home', {
@@ -243,17 +251,43 @@ app.get('/asset/:symbol', auth, async (req, res) => {
       [userId, symbol]
     );
     
-    const sharesHeld = holdings ? Math.floor(holdings.quantity) : 0; //change this line if we implement fractional sales
+    const sharesHeld = holdings ? Math.floor(holdings.quantity) : 0;
+    
+    // Fetch combined news summary and articles from Python API
+    let newsSummary = null;
+    let articles = [];
+    
+    // Fetch articles
+    try {
+      const apiUrl = process.env.PYTHON_API_URL || `http://api:5000`;
+      const newsResponse = await axios.get(`${apiUrl}/news/${symbol}`);
+      articles = newsResponse.data.articles || [];
+      console.log(`[Asset] Fetched ${articles.length} articles for ${symbol}`);
+    } catch (err) {
+      console.log(`[Asset] Could not fetch news articles for ${symbol}:`, err.message);
+    }
+    
+    // Fetch combined summary using cached function
+    try {
+      newsSummary = await getCachedNewsSummary(symbol);
+      console.log(`[Asset] Summary for ${symbol}: ${newsSummary ? 'YES (' + newsSummary.substring(0, 30) + '...)' : 'NO'}`);
+    } catch (err) {
+      console.log(`[Asset] Could not fetch news summary for ${symbol}:`, err.message);
+    }
     
     res.render('pages/asset', { 
       symbol,
-      sharesHeld 
+      sharesHeld,
+      newsSummary,
+      articles
     });
   } catch (err) {
     console.error('Error fetching holdings:', err);
     res.render('pages/asset', { 
       symbol,
-      sharesHeld: 0 
+      sharesHeld: 0,
+      newsSummary: null,
+      articles: []
     });
   }
 });
@@ -379,32 +413,45 @@ async function getIntradayForChart(symbol) {
     return cache[cacheKey].data;
   }
 
-  const apiUrl = process.env.PYTHON_API_URL || `http://api:5000`;
-  const response = await fetch(`${apiUrl}/intraday/${symbol}`);
-  const data = await response.json();
-  const values = data.data?.values;
+  try {
+    const apiUrl = process.env.PYTHON_API_URL || `http://api:5000`;
+    const response = await fetch(`${apiUrl}/intraday/${symbol}`);
+    
+    if (!response.ok) {
+      console.error(`API error for ${symbol}: ${response.status}`);
+      return cache[cacheKey]?.data || [];
+    }
+    
+    const data = await response.json();
+    const values = data.data?.values;
 
-  if (!values) {
-    console.error(`Bad intraday response for ${symbol}`);
+    if (!values) {
+      console.error(`Bad intraday response for ${symbol}`);
+      return cache[cacheKey]?.data || [];
+    }
+
+    const ohlc = values
+      .map(v => ({
+        time: Math.floor(new Date(v.datetime).getTime() / 1000), // convert to Unix timestamp
+        open: parseFloat(v.open),
+        high: parseFloat(v.high),
+        low:  parseFloat(v.low),
+        close: parseFloat(v.close),
+      }))
+      .sort((a, b) => a.time - b.time);
+
+    cache[cacheKey] = { data: ohlc, timestamp: now };
+    return ohlc;
+  } catch (err) {
+    console.error(`Error fetching intraday for ${symbol}:`, err.message);
     return cache[cacheKey]?.data || [];
   }
-
-  const ohlc = values
-    .map(v => ({
-      time: Math.floor(new Date(v.datetime).getTime() / 1000), // convert to Unix timestamp
-      open: parseFloat(v.open),
-      high: parseFloat(v.high),
-      low:  parseFloat(v.low),
-      close: parseFloat(v.close),
-    }))
-    .sort((a, b) => a.time - b.time);
-
-  cache[cacheKey] = { data: ohlc, timestamp: now };
-  return ohlc;
 }
   
 const newsCache = {};
+const summaryCache = {};
 const NEWS_CACHE_DURATION = 2 * 60 * 60 * 1000; // 2 hours in ms
+const SUMMARY_CACHE_DURATION = 6 * 60 * 60 * 1000; // 6 hours in ms
 
 async function getCachedNews(symbol) {
   const now = Date.now();
@@ -430,6 +477,48 @@ async function getCachedNews(symbol) {
   } catch (err) {
     console.error(`Error fetching news for ${symbol}:`, err.message);
     return [];
+  }
+}
+
+async function getCachedNewsSummary(symbol) {
+  const now = Date.now();
+
+  // Check cache first
+  if (summaryCache[symbol] && (now - summaryCache[symbol].timestamp) < SUMMARY_CACHE_DURATION) {
+    console.log(`[Cache] Using cached summary for ${symbol}`);
+    return summaryCache[symbol].data;
+  }
+
+  try {
+    const apiUrl = process.env.PYTHON_API_URL || `http://api:5000`;
+    console.log(`[API] Fetching summary from ${apiUrl}/news-combined-summary/${symbol}`);
+    
+    const response = await axios.get(`${apiUrl}/news-combined-summary/${symbol}`, {
+      timeout: 30000 // 30 second timeout
+    });
+    
+    console.log(`[API] Response status: ${response.status}`);
+    console.log(`[API] Response data:`, response.data);
+    
+    const summary = response.data?.summary || null;
+    
+    if (summary) {
+      summaryCache[symbol] = {
+        data: summary,
+        timestamp: now
+      };
+      console.log(`[Cache] Cached summary for ${symbol}`);
+    } else {
+      console.log(`[API] No summary in response for ${symbol}`);
+    }
+    return summary;
+  } catch (err) {
+    console.error(`[API Error] Failed to fetch summary for ${symbol}:`, {
+      message: err.message,
+      status: err.response?.status,
+      data: err.response?.data
+    });
+    return null;
   }
 }
 

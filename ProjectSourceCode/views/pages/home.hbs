@@ -13,10 +13,13 @@
     <div class="card mt-4">
       <div class="card-header bg-dark text-white">
         <h3 class="mb-0">{{@key}}</h3>
+        {{#if this.summary}}
+        <p class="text-info small mb-0 mt-2">📊 {{this.summary}}</p>
+        {{/if}}
       </div>
       <div class="card-body">
-        {{#if this}}
-          {{#each this}}
+        {{#if this.articles}}
+          {{#each this.articles}}
             <div class="news-item mb-3 pb-3 border-bottom">
               <h5 class="card-title">
                 <a href="{{url}}" target="_blank" class="text-decoration-none">
