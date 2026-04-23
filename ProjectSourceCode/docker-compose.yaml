@@ -22,6 +22,8 @@ services:
     depends_on:
       db:
         condition: service_healthy
+      api:
+        condition: service_started
     ports:
       - '3000:3000'
     volumes:
