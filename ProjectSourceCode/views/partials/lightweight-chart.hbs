@@ -2,6 +2,15 @@
 <script>
   window.addEventListener('load', function() {
     const container = document.getElementById("lw_chart_{{index}}");
+    const data = {{{json intradayData}}};
+    
+    console.log('[Chart {{index}}] Data points:', data.length);
+    
+    if (!data || data.length === 0) {
+      container.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:#666;">No data available</div>';
+      return;
+    }
+    
     const chart = LightweightCharts.createChart(container, {
       width: container.clientWidth,
       height: 200,
@@ -18,7 +27,7 @@
     });
 
     const series = chart.addCandlestickSeries();
-    series.setData({{{json intradayData}}});
+    series.setData(data);
     chart.timeScale().fitContent();
   });
 </script>
