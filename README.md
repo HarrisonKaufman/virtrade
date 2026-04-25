@@ -17,6 +17,7 @@ The website supports account creation, stocks news and data, along with a leader
 | Ian O’Keefe              | iokee4 / ianokee   |
 
 ## Technology Stack
+
 - Project Tracker: GitHub Project Board used to track issues and assign tasks for each member of our team
 
 - Containerized Test: Docker running API and DB servies. When running locally, Docker manages all the network, especially connections between NodeJS and the Postgres data table
@@ -33,6 +34,23 @@ The website supports account creation, stocks news and data, along with a leader
 
 - Stock API's: Finnhub for stock news and Twelve Data for monetary information. Incorporated in both lightweight  and heavy, detailed graphs.
 
+## Directory Structure 
+
+All the project's code resides in `ProjectSourceCode`. 
+- `User` holds the user object which primarily hands the partial storing of user monetary information, such as when they buy and sell. This information will ultimately update the database.
+
+- `api` handles API calls of Finnhub and Twelve Data via Flask; it is in charge of rendering the news, buying and selling.
+ 
+- `init_data/create.sql` creates the SQL database which handles everything in terms of storing information, from user info to stock transactions.
+ 
+- `test` runs all unit tests when run locally.
+ 
+- `utils` holds the JSON parser used to put the stock information in a more readable way.
+ 
+- `views` holds all the partials and webpages needed to actually render the website.
+ 
+- `index.js` has every NodeJS method in regards to user information, such as log-in, registration, leaderboard, etc.
+
 ## Prerequisities 
 
 There should be no requirements or prior installations to be able to run the website. Render handles all the API keys separately. Use the application link to run the website.
@@ -41,7 +59,7 @@ There should be no requirements or prior installations to be able to run the web
 
 To run the website locally, you will need both an IDE to open the project on and Docker. First open the project repository:
 
-Note you will need an API keys for Finhubb and Twelve Data
+Note you will need an API keys for Finhubb, Twelve Data, and Postgres environmental variables
 
 1. Go to "ProjectSourceCode" directory
     - From the initial project folder, you can do this via the follwoing command: `cd ProjectSourceCode`
