@@ -69,6 +69,18 @@ describe('Testing Register API', () => {
         done();
       });
   });
+  // *******************************1 ADDITIONAL TEST CASE*************************************************
+  it('negative : /register - should reject missing fields', done => {
+    chai
+      .request(server)
+      .post('/api/register')
+      .send({
+        username: 'userOnly'
+      })
+      .end((err, res) => {
+        expect(res).to.have.status(400);
+        expect(res.body.message).to.equal('Invalid input');
+        done();
+      })
+  })
 });
-
-// ********************************************************************************
