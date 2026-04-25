@@ -20,7 +20,7 @@ The website supports account creation, stocks news and data, along with a leader
 
 - Project Tracker: GitHub Project Board used to track issues and assign tasks for each member of our team
 
-- Containerized Test: Docker running API and DB servies. When running locally, Docker manages all the network, especially connections between NodeJS and the Postgres data table
+- Containerized Test: Docker running API and DB services. When running locally, Docker manages all the network, especially connections between NodeJS and the Postgres data table
 
 - Database: SQL Postgres, featuring tables for user, transactions, etc. 
 
@@ -59,7 +59,7 @@ There should be no requirements or prior installations to be able to run the web
 
 To run the website locally, you will need both an IDE to open the project on and Docker. First open the project repository:
 
-Note you will need an API keys for Finhubb, Twelve Data, and Postgres environmental variables
+Note you will need an API keys for Finnhub, Twelve Data, and Postgres environmental variables
 
 1. Go to "ProjectSourceCode" directory
     - From the initial project folder, you can do this via the follwoing command: `cd ProjectSourceCode`
