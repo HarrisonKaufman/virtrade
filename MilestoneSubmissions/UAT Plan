@@ -31,7 +31,7 @@ Final test results will be input into report
 3.) UAT for a Stock Trade
 Acceptance Criteria: 
 A user can conduct a trade with their balance updating accordingly and their stock portfolio changes to show updated holdings
-A user cannot register without providing all required info (password, username etc.)
+The database updates accordingly with the transaction
 The test data will be the information that we post to the database.
 The test environment will be a localhost 
 The test results should be verification that the entered information is the same as that in the database
