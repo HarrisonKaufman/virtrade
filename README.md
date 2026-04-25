@@ -17,21 +17,21 @@ The website supports account creation, stocks news and data, along with a leader
 | Ian O’Keefe              | iokee4 / ianokee   |
 
 ## Technology Stack
-- Project Tracker: GitHub Project Board
+- Project Tracker: GitHub Project Board used to track issues and assign tasks for each member of our team
 
-- Containerized Test: Docker running API and DB servies
+- Containerized Test: Docker running API and DB servies. When running locally, Docker manages all the network, especially connections between NodeJS and the Postgres data table
 
-- Database: SQL Postgres 
+- Database: SQL Postgres, featuring tables for user, transactions, etc. 
 
-- Front-End UI: HTML and Handlebars with Bootstrap extension
+- Front-End UI: HTML and Handlebars with Bootstrap extension. Each page is its own partial handling both API and Database data when applicable.
 
-- Test Suite: Mocha used for Unit Tests
+- Test Suite: Mocha used for Unit Tests. Test results can be seen when running the website via a Docker container.
 
-- Application Server: Node JS and Flask API server
+- Application Server: NodeJS and Flask API server. Both Node and Flask handle network requests, especially in terms of account and transaction management.
 
-- Deployable Environment: Render hosting website
+- Deployable Environment: Render hosting website. Has all API keys requiring no further input from the user.
 
-- Stock API's: Finnhub for Stock News and Twelve Data for information
+- Stock API's: Finnhub for stock news and Twelve Data for monetary information. Incorporated in both lightweight  and heavy, detailed graphs.
 
 ## Prerequisities 
 
@@ -64,4 +64,4 @@ web-1  |     ✓ negative : /register - should reject missing fields
 ```
 
 ## Deployed Application
-[Application Link](https://virtrade-hpue.onrender.com/)
+Online Website: [Application Link](https://virtrade-hpue.onrender.com/)
