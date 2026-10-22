@@ -82,4 +82,4 @@ web-1  |     ✓ negative : /register - should reject missing fields
 ```
 
 ## Deployed Application
-Online Website: [Application Link](https://virtrade-hpue.onrender.com/)
+Online Website: [Application Link](https://virtrade-web.onrender.com)
